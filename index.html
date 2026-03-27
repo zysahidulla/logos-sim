@@ -139,6 +139,37 @@
       color: var(--accent);
     }
 
+    #undo-redo-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 6px 12px;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--bg-canvas);
+    }
+    #undo-redo-bar #zoom-indicator {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    #undo-redo-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .ur-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; font-family: 'Inter', sans-serif;
+      font-weight: 600; cursor: pointer; transition: all 0.15s;
+      background: transparent; border: 1px solid var(--border-light); color: var(--text-muted);
+    }
+    .ur-btn i { font-size: 1rem; }
+    .ur-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .ur-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
     #btn-clear {
       color: #ff6b6b;
       border-color: rgba(255, 107, 107, 0.35);
@@ -236,10 +267,33 @@
 
     #status-bar {
       height: 36px; border-top: 1px solid var(--border-color);
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: center;
       padding: 0 20px; background-color: var(--bg-canvas);
       font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);
     }
+    #status-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 16px;
+    }
+    #status-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    #status-hint {
+      font-size: clamp(0.52rem, 0.75vw, 0.62rem);
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: min(48vw, 560px);
+      text-align: right;
+    }
+    #counts, #zoom-indicator { white-space: nowrap; }
 
     /* ────────────────────────────────────────────────
        PROPERTIES / TRUTH TABLE
@@ -451,9 +505,144 @@
 
     .challenge-checker-msg.success { color: #26c281; }
     .challenge-checker-msg.fail { color: #e74c3c; }
+
+    /* ────────────────────────────────────────────────
+       WELCOME MODAL
+       ──────────────────────────────────────────────── */
+    #welcome-modal {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(0, 230, 210, 0.16), transparent 42%),
+        radial-gradient(circle at 80% 80%, rgba(0, 230, 210, 0.08), transparent 40%),
+        rgba(0, 0, 0, 0.68);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    #welcome-modal.show { display: flex; }
+
+    .welcome-card {
+      position: relative;
+      width: min(780px, 96vw);
+      background:
+        linear-gradient(145deg, rgba(0, 230, 210, 0.06), rgba(0, 230, 210, 0.01) 35%),
+        var(--bg-panel);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      padding: 28px 26px 22px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .welcome-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    #welcome-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border-light);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      z-index: 1;
+      transition: all 0.2s;
+    }
+    #welcome-close:hover {
+      color: var(--text-main);
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .welcome-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(0, 230, 210, 0.35);
+      background: rgba(0, 230, 210, 0.1);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 0.68rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .welcome-title {
+      color: var(--accent);
+      font-size: clamp(1.05rem, 2.35vw, 1.6rem);
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    .welcome-note {
+      color: var(--text-muted);
+      font-size: clamp(0.8rem, 1.6vw, 0.96rem);
+      line-height: 1.5;
+      max-width: 62ch;
+      margin: 0 auto;
+    }
+
+    .welcome-divider {
+      height: 1px;
+      width: 100%;
+      margin: 16px 0 14px;
+      background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+    }
+
+    .welcome-start {
+      border: 1px solid rgba(0, 230, 210, 0.38);
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.35px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 2px;
+    }
+    .welcome-start:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent);
+      color: var(--text-main);
+    }
   </style>
 </head>
 <body>
+
+  <div id="welcome-modal" aria-hidden="true">
+    <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+      <button id="welcome-close" type="button" aria-label="Close">X</button>
+      <div class="welcome-badge"><i class="ph ph-circuitry"></i> Desktop Experience</div>
+      <div class="welcome-title" id="welcome-title">WELCOME TO LOGOS!</div>
+      <div class="welcome-title" id="welcome-title">An Interactive Digital Logic Circuit Simulator</div>
+      <div class="welcome-note">This is the Beta Version and it is only compatible on PC. Mobile version is coming soon.</div>
+      <div class="welcome-divider"></div>
+      <button class="welcome-start" id="welcome-start" type="button">Start Exploring</button>
+    </div>
+  </div>
 
   <div id="top-nav">
     <div class="nav-left">
@@ -461,7 +650,7 @@
         <span class="brand-name">LOGOS</span>
         <span class="brand-version">v6.7</span>
       </div>
-      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <div class="live-badge"><div class="live-dot"></div> BETA</div>
       <div class="divider"></div>
       <button class="nav-btn" id="btn-examples"><i class="ph ph-stack"></i> Examples</button>
       <button class="nav-btn" id="btn-challenges"><i class="ph ph-puzzle-piece"></i> Challenges</button>
@@ -532,10 +721,20 @@
       <div id="canvas-container">
         <canvas id="canvas"></canvas>
       </div>
+      <div id="undo-redo-bar">
+        <div id="undo-redo-controls">
+          <button class="ur-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)"><i class="ph ph-arrow-counter-clockwise"></i> </button>
+          <button class="ur-btn" id="btn-redo" disabled title="Redo (Ctrl+Y)"><i class="ph ph-arrow-clockwise"></i> </button>
+        </div>
+        <span id="zoom-indicator">Zoom: 100%</span>
+      </div>
       <div id="status-bar">
-        <span id="counts">Gates: 0 &nbsp;&nbsp; Wires: 0</span>
-        <span style="font-size: 0.65rem; color: var(--text-dim);">Drag to add • Click output→input to wire • Hold left-click on empty background to pan • Scroll to zoom</span>
-        <span id="zoom-indicator" style="font-size: 0.7rem; color: var(--text-dim); text-align: right;">Zoom: 100%</span>
+        <div id="status-main">
+          <span id="counts">Gates: 0 &nbsp;&nbsp; Wires: 0</span>
+          <div id="status-right">
+            <span id="status-hint">Drag to add • Hold left-click on empty background to pan • Scroll to zoom</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -558,6 +757,9 @@ const rightHeader = document.getElementById('right-header');
 const rightContent = document.getElementById('right-content');
 const counts = document.getElementById('counts');
 const btnTheme = document.getElementById('btn-theme');
+const welcomeModal = document.getElementById('welcome-modal');
+const welcomeClose = document.getElementById('welcome-close');
+const welcomeStart = document.getElementById('welcome-start');
 
 let components = []; let wires = [];
 let selectedComp = null; let draggedComp = null; let connectingFrom = null;
@@ -569,6 +771,40 @@ let challengeFeedback = '';
 const exampleSignatureCache = {};
 
 let currentMode = 'examples';
+
+// Undo / Redo stacks
+let undoStack = [], redoStack = [];
+const MAX_HISTORY = 50;
+
+function pushUndo() {
+  undoStack.push(serializeCircuit());
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack = [];
+  updateUndoRedoButtons();
+}
+
+function performUndo() {
+  if (!undoStack.length) return;
+  redoStack.push(serializeCircuit());
+  const prev = undoStack.pop();
+  deserializeCircuit(prev);
+  updateUndoRedoButtons();
+}
+
+function performRedo() {
+  if (!redoStack.length) return;
+  undoStack.push(serializeCircuit());
+  const next = redoStack.pop();
+  deserializeCircuit(next);
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  const btnUndo = document.getElementById('btn-undo');
+  const btnRedo = document.getElementById('btn-redo');
+  if (btnUndo) btnUndo.disabled = undoStack.length === 0;
+  if (btnRedo) btnRedo.disabled = redoStack.length === 0;
+}
 
 // Zoom and pan state
 let zoomLevel = 1;
@@ -610,6 +846,35 @@ function initTheme() {
   const saved = localStorage.getItem('logos-theme');
   setTheme(saved === 'light' ? 'light' : 'dark');
 }
+
+function showWelcomeModal() {
+  if (!welcomeModal) return;
+  welcomeModal.classList.add('show');
+  welcomeModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeWelcomeModal() {
+  if (!welcomeModal) return;
+  welcomeModal.classList.remove('show');
+  welcomeModal.setAttribute('aria-hidden', 'true');
+}
+
+if (welcomeClose) {
+  welcomeClose.addEventListener('click', closeWelcomeModal);
+}
+if (welcomeStart) {
+  welcomeStart.addEventListener('click', closeWelcomeModal);
+}
+if (welcomeModal) {
+  welcomeModal.addEventListener('click', e => {
+    if (e.target === welcomeModal) closeWelcomeModal();
+  });
+}
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && welcomeModal && welcomeModal.classList.contains('show')) {
+    closeWelcomeModal();
+  }
+});
 
 function resize() {
   canvas.width = container.clientWidth; canvas.height = container.clientHeight;
@@ -1815,14 +2080,26 @@ function render() {
 // ────────────────────────────────────────────────
 let mx=0, my=0;
 
+let dragOffsetX = 0, dragOffsetY = 0;
+let dragStartX = 0, dragStartY = 0;
 container.addEventListener('dragover', e=>e.preventDefault());
 container.addEventListener('drop', e=> {
   let t = e.dataTransfer.getData('text'); if(!t) return;
   let r = canvas.getBoundingClientRect();
-  components.push(new Gate(t, e.clientX - r.left - 45, e.clientY - r.top - 32));
+  let screenX = e.clientX - r.left - dragOffsetX;
+  let screenY = e.clientY - r.top - dragOffsetY;
+  let worldX = (screenX - panX) / zoomLevel;
+  let worldY = (screenY - panY) / zoomLevel;
+  pushUndo();
+  components.push(new Gate(t, worldX, worldY));
   simulate();
 });
-document.querySelectorAll('.gate-tool').forEach(t => t.ondragstart = e => e.dataTransfer.setData('text', t.dataset.type));
+document.querySelectorAll('.gate-tool').forEach(t => t.ondragstart = e => {
+  const rect = t.getBoundingClientRect();
+  dragOffsetX = e.clientX - rect.left;
+  dragOffsetY = e.clientY - rect.top;
+  e.dataTransfer.setData('text', t.dataset.type);
+});
 
 canvas.onmousedown = e => {
   let r = canvas.getBoundingClientRect(); 
@@ -1840,6 +2117,7 @@ canvas.onmousedown = e => {
   if (selectedComp) {
     const del = selectedComp.getDeleteBadgePos();
     if (Math.hypot(mx - del.x, my - del.y) <= del.r + 2) {
+      pushUndo();
       removeComponent(selectedComp);
       return;
     }
@@ -1855,6 +2133,7 @@ canvas.onmousedown = e => {
   // Wire click
   for(let w of wires) {
     if(isPointNearWire(mx, my, w)) {
+      pushUndo();
       wires = wires.filter(wire => wire !== w);
       simulate();
       render();
@@ -1866,8 +2145,8 @@ canvas.onmousedown = e => {
   for(let i=components.length-1; i>=0; i--) {
     let c = components[i];
     if(mx>c.x && mx<c.x+c.w && my>c.y && my<c.y+c.h) {
-      if(c.type==='input') { c.value = !c.value; simulate(); }
-      selectedComp = c; draggedComp = c; dragOffX = mx-c.x; dragOffY = my-c.y;
+      if(c.type==='input') { pushUndo(); c.value = !c.value; simulate(); }
+      selectedComp = c; draggedComp = c; dragOffX = mx-c.x; dragOffY = my-c.y; dragStartX = c.x; dragStartY = c.y;
       updateUI(); render(); return;
     }
   }
@@ -1905,6 +2184,16 @@ canvas.onmousemove = e => {
 
 canvas.onmouseup = e => {
   isPanning = false;
+  if (draggedComp) {
+    // Only push undo if the gate actually moved
+    if (Math.abs(draggedComp.x - dragStartX) > 2 || Math.abs(draggedComp.y - dragStartY) > 2) {
+      const moved = draggedComp;
+      const finalX = moved.x, finalY = moved.y;
+      moved.x = dragStartX; moved.y = dragStartY;
+      pushUndo();
+      moved.x = finalX; moved.y = finalY;
+    }
+  }
   draggedComp = null;
   if(connectingFrom) {
     for(let c of components) {
@@ -1916,6 +2205,7 @@ canvas.onmouseup = e => {
         }
       }
     }
+    pushUndo();
     connectingFrom = null; simulate();
   }
 };
@@ -2014,7 +2304,10 @@ navButtons.challenges.onclick = () => setMode('challenges');
 navButtons.props.onclick = () => setMode('props');
 navButtons.tt.onclick = () => setMode('tt');
 btnTheme.onclick = () => setTheme(document.body.classList.contains('light-mode') ? 'dark' : 'light');
+document.getElementById('btn-undo').onclick = () => performUndo();
+document.getElementById('btn-redo').onclick = () => performRedo();
 document.getElementById('btn-clear').onclick = () => {
+  pushUndo();
   clearWorkspace();
   currentExampleKey = null;
   simulate();
@@ -2026,9 +2319,18 @@ window.addEventListener('keydown', e => {
   if (typingInField) return;
 
   if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedComp) pushUndo();
     if (window.delSelected()) {
       e.preventDefault();
     }
+  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+    e.preventDefault();
+    performUndo();
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+    e.preventDefault();
+    performRedo();
   }
 });
 
@@ -2037,6 +2339,7 @@ setTimeout(() => {
   initTheme();
   loadFromURL();
   if (!currentExampleKey) setMode('examples');
+  showWelcomeModal();
 }, 120);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
