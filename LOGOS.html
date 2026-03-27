@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LOGOS: Logic Simulator</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    :root {
+      /* Color Palette from Image */
+      --bg-app: #0d0d0d;
+      --bg-panel: #111111;
+      --bg-canvas: #090909;
+      --bg-hover: #1a1a1a;
+      
+      --border-color: #222222;
+      --border-light: #333333;
+      
+      --accent: #00e6d2; /* Cyan */
+      --accent-dim: rgba(0, 230, 210, 0.1);
+      --accent-hover: rgba(0, 230, 210, 0.2);
+      
+      --text-main: #e0e0e0;
+      --text-muted: #757575;
+      --text-dim: #4a4a4a;
+      
+      --gate-bg: #161616;
+      --gate-icon-bg: #1e1e1e;
+
+      --grid-dot: rgba(255, 255, 255, 0.08);
+      --symbol-stroke: #f5f5f5;
+      --symbol-label: #aaaaaa;
+      --selection-stroke: #00e6d2;
+      --port-ring: #555555;
+      --port-off: #222222;
+      --wire-off: #333333;
+      --wire-preview: #555555;
+      --input-off: #2a2a2a;
+      --button-ring-off: #4a4a4a;
+      --bulb-filament-off: #9a9a9a;
+      --wire-error: #ff4444;
+      --port-connect-highlight: #f39c12;
+    }
+
+    body.light-mode {
+      --bg-app: #f3f6fb;
+      --bg-panel: #ffffff;
+      --bg-canvas: #eef2f9;
+      --bg-hover: #e8eef9;
+
+      --border-color: #d3dbe8;
+      --border-light: #c6cfde;
+
+      --accent: #0aa59a;
+      --accent-dim: rgba(10, 165, 154, 0.12);
+      --accent-hover: rgba(10, 165, 154, 0.2);
+
+      --text-main: #1f2a44;
+      --text-muted: #5a6786;
+      --text-dim: #7d88a3;
+
+      --gate-bg: #f7f9fd;
+      --gate-icon-bg: #edf2fb;
+
+      --grid-dot: rgba(31, 42, 68, 0.12);
+      --symbol-stroke: #1f2a44;
+      --symbol-label: #3a4561;
+      --selection-stroke: #0aa59a;
+      --port-ring: #64708c;
+      --port-off: #bcc5d8;
+      --wire-off: #7d88a3;
+      --wire-preview: #7180a0;
+      --input-off: #d5deef;
+      --button-ring-off: #a9b6d2;
+      --bulb-filament-off: #808fb0;
+      --wire-error: #d33f3f;
+      --port-connect-highlight: #d17e00;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ────────────────────────────────────────────────
+       TOP NAVIGATION
+       ──────────────────────────────────────────────── */
+    #top-nav {
+      height: 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-app);
+      z-index: 10;
+    }
+
+    .nav-left, .nav-right { display: flex; align-items: center; gap: 16px; height: 100%; }
+
+    .brand { display: flex; align-items: baseline; gap: 8px; font-weight: 700; letter-spacing: 0.5px; }
+    .brand-name { color: var(--accent); font-size: 1.1rem; }
+    .brand-version { color: var(--text-muted); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background-color: var(--accent-dim); color: var(--accent);
+      border: 1px solid rgba(0, 230, 210, 0.3);
+      padding: 4px 10px; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;
+    }
+    .live-dot { width: 6px; height: 6px; background-color: var(--accent); border-radius: 50%; box-shadow: 0 0 6px var(--accent); }
+
+    .nav-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: transparent; border: 1px solid transparent; color: var(--text-muted);
+      font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+    }
+    .nav-btn i { font-size: 1.1rem; }
+    .nav-btn:hover { color: var(--text-main); background: var(--bg-hover); }
+    
+    .nav-btn.active {
+      background-color: var(--accent-dim);
+      border-color: rgba(0, 230, 210, 0.3);
+      color: var(--accent);
+    }
+
+    #btn-clear {
+      color: #ff6b6b;
+      border-color: rgba(255, 107, 107, 0.35);
+      background: rgba(255, 107, 107, 0.08);
+    }
+
+    #btn-clear:hover {
+      color: #ffd8d8;
+      border-color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.2);
+    }
+    
+    .divider { width: 1px; height: 20px; background-color: var(--border-color); margin: 0 4px; }
+
+    /* ────────────────────────────────────────────────
+       MAIN WORKSPACE LAYOUT
+       ──────────────────────────────────────────────── */
+    #workspace {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left Panel: Components */
+    #left-panel {
+      width: 260px;
+      background-color: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex; flex-direction: column;
+    }
+
+    /* Middle Area: Canvas + Status Bar */
+    #center-panel {
+      flex: 1;
+      display: flex; flex-direction: column;
+      position: relative;
+    }
+
+    /* Right Panel: Properties */
+    #right-panel {
+      width: 300px;
+      background-color: var(--bg-panel);
+      border-left: 1px solid var(--border-color);
+      display: flex; flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      font-size: 0.85rem; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-content { padding: 16px 20px; overflow-y: auto; flex: 1; }
+
+    /* ────────────────────────────────────────────────
+       TOOLBOX ITEMS
+       ──────────────────────────────────────────────── */
+    .category-title {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 1px;
+      color: var(--text-muted); text-transform: uppercase;
+      margin: 16px 0 8px 0;
+    }
+    .category-title:first-child { margin-top: 0; }
+
+    .gate-tool {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 8px; margin-bottom: 4px;
+      border-radius: 6px; cursor: grab; transition: all 0.2s;
+    }
+    .gate-tool:hover { background-color: var(--bg-hover); }
+    .gate-tool:active { cursor: grabbing; }
+
+    .gate-tool-left { display: flex; align-items: center; gap: 12px; }
+    .gate-icon-box {
+      width: 28px; height: 28px;
+      background-color: var(--gate-icon-bg); border: 1px solid var(--border-light); border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700;
+    }
+    .gate-tool-name { font-size: 0.8rem; font-weight: 500; color: var(--text-main); }
+    .gate-tool-ports { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); }
+
+    /* ────────────────────────────────────────────────
+       CANVAS & STATUS BAR
+       ──────────────────────────────────────────────── */
+    #canvas-container {
+      flex: 1; position: relative;
+      background-color: var(--bg-canvas);
+      background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; outline: none; }
+
+    #status-bar {
+      height: 36px; border-top: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 20px; background-color: var(--bg-canvas);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);
+    }
+
+    /* ────────────────────────────────────────────────
+       PROPERTIES / TRUTH TABLE
+       ──────────────────────────────────────────────── */
+    .empty-state { font-size: 0.8rem; color: var(--text-muted); }
+
+    .prop-group { margin-bottom: 20px; }
+    .prop-label { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+    .prop-value { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-main); }
+    
+    .prop-input {
+      width: 100%; background: var(--bg-app); border: 1px solid var(--border-light);
+      color: var(--text-main); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+      padding: 8px 10px; border-radius: 4px; outline: none; transition: border 0.2s;
+    }
+    .prop-input:focus { border-color: var(--accent); }
+
+    .btn-action {
+      width: 100%; padding: 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      background: transparent; border: 1px solid var(--border-light); color: var(--text-main); margin-top: 8px;
+    }
+    .btn-action:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger:hover { border-color: #ff4444; color: #ff4444; }
+
+    #truth-table-view { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; width: 100%; border-collapse: collapse; }
+    #truth-table-view th { color: var(--text-muted); text-align: center; padding: 6px 10px; border-bottom: 1px solid var(--border-light); font-weight: normal; }
+    #truth-table-view td { text-align: center; padding: 6px 10px; color: var(--text-dim); }
+    #truth-table-view td.active-bit { color: var(--accent); font-weight: 700; }
+    #truth-table-view tr.current-row td { background-color: rgba(0, 230, 210, 0.06); }
+
+    .panel-note {
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .browser-section { margin-bottom: 22px; }
+    .browser-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .browser-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .browser-card {
+      border: 1px solid var(--border-light);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .browser-card.disabled {
+      opacity: 0.72;
+      border-style: dashed;
+    }
+
+    .browser-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .browser-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .browser-tag,
+    .challenge-tier {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.62rem;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      font-weight: 700;
+      border: 1px solid rgba(0, 230, 210, 0.18);
+      background: rgba(0, 230, 210, 0.08);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .browser-desc,
+    .challenge-desc,
+    .challenge-goal {
+      font-size: 0.76rem;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    .browser-desc { margin-bottom: 10px; }
+    .challenge-goal { margin-top: 8px; }
+
+    .browser-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-inline {
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: transparent;
+      color: var(--text-main);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-inline:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .btn-inline.active {
+      color: var(--accent);
+      border-color: rgba(0, 230, 210, 0.35);
+      background: var(--accent-dim);
+    }
+
+    .challenge-card {
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 12px;
+      background-color: rgba(255, 255, 255, 0.01);
+    }
+
+    .challenge-card.beginner { border-left: 3px solid #26c281; }
+    .challenge-card.intermediate { border-left: 3px solid #3498db; }
+    .challenge-card.sequential { border-left: 3px solid #f1c40f; }
+    .challenge-card.advanced { border-left: 3px solid #e74c3c; }
+
+    .challenge-card.beginner .challenge-tier { color: #26c281; border-color: rgba(38, 194, 129, 0.25); background: rgba(38, 194, 129, 0.1); }
+    .challenge-card.intermediate .challenge-tier { color: #3498db; border-color: rgba(52, 152, 219, 0.25); background: rgba(52, 152, 219, 0.1); }
+    .challenge-card.sequential .challenge-tier { color: #f1c40f; border-color: rgba(241, 196, 15, 0.25); background: rgba(241, 196, 15, 0.1); }
+    .challenge-card.advanced .challenge-tier { color: #e74c3c; border-color: rgba(231, 76, 60, 0.25); background: rgba(231, 76, 60, 0.1); }
+
+    .challenge-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .challenge-name {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .challenge-hint {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .challenge-status {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .challenge-status.pending { color: var(--text-muted); }
+    .challenge-status.started { color: #f1c40f; }
+    .challenge-status.done { color: #26c281; }
+
+    .challenge-checker {
+      margin-top: 10px;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .challenge-checker-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .challenge-checker-msg {
+      font-size: 0.74rem;
+      line-height: 1.4;
+      color: var(--text-muted);
+      margin-top: 8px;
+      min-height: 16px;
+    }
+
+    .challenge-checker-msg.success { color: #26c281; }
+    .challenge-checker-msg.fail { color: #e74c3c; }
+  </style>
+</head>
+<body>
+
+  <div id="top-nav">
+    <div class="nav-left">
+      <div class="brand">
+        <span class="brand-name">LOGOS</span>
+        <span class="brand-version">v6.7</span>
+      </div>
+      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <div class="divider"></div>
+      <button class="nav-btn" id="btn-examples"><i class="ph ph-stack"></i> Examples</button>
+      <button class="nav-btn" id="btn-challenges"><i class="ph ph-puzzle-piece"></i> Challenges</button>
+    </div>
+    
+    <div class="nav-right">
+      <button class="nav-btn" id="btn-tt"><i class="ph ph-table"></i> Truth Table</button>
+      <button class="nav-btn" id="btn-props"><i class="ph ph-gear"></i> Properties</button>
+      <div class="divider"></div>
+      <button class="nav-btn" id="btn-theme"><i class="ph ph-sun"></i> Theme</button>
+      <button class="nav-btn" id="btn-share" onclick="shareCircuit()"><i class="ph ph-share-network"></i> Share</button>
+      <button class="nav-btn" id="btn-clear"><i class="ph ph-trash"></i> Clear</button>
+    </div>
+  </div>
+
+  <div id="workspace">
+    
+    <div id="left-panel">
+      <div class="panel-header"><i class="ph ph-circuitry"></i> COMPONENTS</div>
+      <div class="panel-content">
+        
+        <div class="category-title">Basic</div>
+        <div class="gate-tool" data-type="and" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box">&</div><span class="gate-tool-name">AND</span></div>
+          <span class="gate-tool-ports">2→1</span>
+        </div>
+        <div class="gate-tool" data-type="or" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box">≥1</div><span class="gate-tool-name">OR</span></div>
+          <span class="gate-tool-ports">2→1</span>
+        </div>
+        <div class="gate-tool" data-type="not" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box">1</div><span class="gate-tool-name">NOT</span></div>
+          <span class="gate-tool-ports">1→1</span>
+        </div>
+
+        <div class="category-title">Derived</div>
+        <div class="gate-tool" data-type="xor" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box">=1</div><span class="gate-tool-name">XOR</span></div>
+          <span class="gate-tool-ports">2→1</span>
+        </div>
+        <div class="gate-tool" data-type="xnor" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box">=0</div><span class="gate-tool-name">XNOR</span></div>
+          <span class="gate-tool-ports">2→1</span>
+        </div>
+        <div class="gate-tool" data-type="nand" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box" style="text-decoration: overline;">&</div><span class="gate-tool-name">NAND</span></div>
+          <span class="gate-tool-ports">2→1</span>
+        </div>
+        <div class="gate-tool" data-type="nor" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box" style="text-decoration: overline;">≥1</div><span class="gate-tool-name">NOR</span></div>
+          <span class="gate-tool-ports">2→1</span>
+        </div>
+
+        <div class="category-title">I/O</div>
+        <div class="gate-tool" data-type="input" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box"><i class="ph-fill ph-caret-right"></i></div><span class="gate-tool-name">INPUT</span></div>
+          <span class="gate-tool-ports">1</span>
+        </div>
+        <div class="gate-tool" data-type="output" draggable="true">
+          <div class="gate-tool-left"><div class="gate-icon-box"><i class="ph-fill ph-caret-left"></i></div><span class="gate-tool-name">OUTPUT</span></div>
+          <span class="gate-tool-ports">1→</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="center-panel">
+      <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+      </div>
+      <div id="status-bar">
+        <span id="counts">Gates: 0 &nbsp;&nbsp; Wires: 0</span>
+        <span style="font-size: 0.65rem; color: var(--text-dim);">Drag to add • Click output→input to wire • Hold left-click on empty background to pan • Scroll to zoom</span>
+        <span id="zoom-indicator" style="font-size: 0.7rem; color: var(--text-dim); text-align: right;">Zoom: 100%</span>
+      </div>
+    </div>
+
+    <div id="right-panel">
+      <div class="panel-header" id="right-header"><i class="ph ph-gear"></i> PROPERTIES</div>
+      <div class="panel-content" id="right-content">
+        </div>
+    </div>
+
+  </div>
+
+<script>
+// ────────────────────────────────────────────────
+// Core Logic & Engine
+// ────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvas-container');
+const rightHeader = document.getElementById('right-header');
+const rightContent = document.getElementById('right-content');
+const counts = document.getElementById('counts');
+const btnTheme = document.getElementById('btn-theme');
+
+let components = []; let wires = [];
+let selectedComp = null; let draggedComp = null; let connectingFrom = null;
+let dragOffX = 0, dragOffY = 0; let nextId = 1;
+let currentExampleKey = null;
+let activeChallengeIndex = null;
+let challengeProgress = {};
+let challengeFeedback = '';
+const exampleSignatureCache = {};
+
+let currentMode = 'examples';
+
+// Zoom and pan state
+let zoomLevel = 1;
+let panX = 0, panY = 0;
+let isPanning = false;
+let panStartX = 0, panStartY = 0;
+
+const MODE_HEADERS = {
+  examples: '<i class="ph ph-stack"></i> EXAMPLES',
+  challenges: '<i class="ph ph-puzzle-piece"></i> CHALLENGES',
+  props: '<i class="ph ph-gear"></i> PROPERTIES',
+  tt: '<i class="ph ph-table"></i> TRUTH TABLE'
+};
+
+const navButtons = {
+  examples: document.getElementById('btn-examples'),
+  challenges: document.getElementById('btn-challenges'),
+  props: document.getElementById('btn-props'),
+  tt: document.getElementById('btn-tt')
+};
+
+function cssVar(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+function setTheme(mode) {
+  const light = mode === 'light';
+  document.body.classList.toggle('light-mode', light);
+  localStorage.setItem('logos-theme', light ? 'light' : 'dark');
+  if (btnTheme) {
+    btnTheme.innerHTML = light
+      ? '<i class="ph ph-moon"></i> Dark'
+      : '<i class="ph ph-sun"></i> Light';
+  }
+  render();
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('logos-theme');
+  setTheme(saved === 'light' ? 'light' : 'dark');
+}
+
+function resize() {
+  canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+  render();
+}
+window.addEventListener('resize', resize);
+
+function getPortConfig(type) {
+  if (type === 'input') return { inPorts: 0, outPorts: 1, height: 50 };
+  if (type === 'output') return { inPorts: 1, outPorts: 0, height: 50 };
+  if (type === 'not') return { inPorts: 1, outPorts: 1, height: 50 };
+  return { inPorts: 2, outPorts: 1, height: 64 };
+}
+
+function getGateGeometry(type, x, y, w, h) {
+  const cx = x + w / 2;
+  const cy = y + h * 0.62;
+  const gw = Math.min(50, w - 24);
+  const gh = Math.min(30, h - 20);
+  const left = cx - gw / 2;
+  const right = cx + gw / 2;
+  const top = cy - gh / 2;
+  const bottom = cy + gh / 2;
+
+  let inPins = [];
+  let outPin = { x: right + 5, y: cy };
+
+  if (type === 'input') {
+    inPins = [];
+    outPin = { x: right + 2, y: cy };
+  } else if (type === 'output') {
+    inPins = [{ x: left - 2, y: cy }];
+    outPin = { x: right + 6, y: cy };
+  } else if (type === 'not') {
+    inPins = [{ x: left - 8, y: cy }];
+    outPin = { x: right + 8, y: cy };
+  } else if (type === 'and' || type === 'nand') {
+    inPins = [
+      { x: left - 8, y: cy - gh * 0.24 },
+      { x: left - 8, y: cy + gh * 0.24 }
+    ];
+    outPin = { x: right + (type === 'nand' ? 6 : 3), y: cy };
+  } else {
+    inPins = [
+      { x: left - 10, y: cy - gh * 0.24 },
+      { x: left - 10, y: cy + gh * 0.24 }
+    ];
+    outPin = { x: right + ((type === 'nor' || type === 'xnor') ? 7 : 3), y: cy };
+  }
+
+  return { cx, cy, gw, gh, left, right, top, bottom, inPins, outPin };
+}
+
+function drawGateShape(type, x, y, w, h, value = false) {
+  const geom = getGateGeometry(type, x, y, w, h);
+  const { cx, cy, gw, gh, left, right, top, bottom, inPins, outPin } = geom;
+
+  ctx.save();
+  ctx.strokeStyle = cssVar('--symbol-stroke');
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Pin stubs for a schematic look
+  inPins.forEach(pin => {
+    ctx.beginPath();
+    ctx.moveTo(pin.x, pin.y);
+    ctx.lineTo(pin.x + 7, pin.y);
+    ctx.stroke();
+  });
+
+  ctx.beginPath();
+  ctx.moveTo(outPin.x - 7, outPin.y);
+  ctx.lineTo(outPin.x, outPin.y);
+  ctx.stroke();
+
+  if (type === 'not') {
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, bottom);
+    ctx.lineTo(right - 8, cy);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(right - 3, cy, 3.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  if (type === 'and' || type === 'nand') {
+    const arcCx = left + gw * 0.55;
+    const arcR = gh / 2;
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, bottom);
+    ctx.lineTo(arcCx, bottom);
+    ctx.arc(arcCx, cy, arcR, Math.PI / 2, -Math.PI / 2, true);
+    ctx.lineTo(left, top);
+    ctx.stroke();
+
+    if (type === 'nand') {
+      ctx.beginPath();
+      ctx.arc(right - 1.5, cy, 3.1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (type === 'or' || type === 'nor' || type === 'xor' || type === 'xnor') {
+    const frontX = right - 3;
+    const backX = left + 2;
+    const backCurveX = left - 7;
+
+    if (type === 'xor' || type === 'xnor') {
+      ctx.beginPath();
+      ctx.moveTo(backX - 5, top);
+      ctx.quadraticCurveTo(backCurveX - 4, cy, backX - 5, bottom);
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(backX, top);
+    ctx.quadraticCurveTo(backCurveX, cy, backX, bottom);
+    ctx.quadraticCurveTo(cx + 6, bottom, frontX, cy);
+    ctx.quadraticCurveTo(cx + 6, top, backX, top);
+    ctx.stroke();
+
+    if (type === 'nor' || type === 'xnor') {
+      ctx.beginPath();
+      ctx.arc(right + 1.5, cy, 3.1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+
+  // I/O symbols
+  if (type === 'input') {
+    const btnR = Math.min(10, gh * 0.44);
+
+    // Wire and stem
+    ctx.beginPath();
+    ctx.moveTo(left - 2, cy);
+    ctx.lineTo(cx - btnR - 4, cy);
+    ctx.stroke();
+
+    // Button cap (pressed when HIGH)
+    ctx.fillStyle = value ? cssVar('--accent') : cssVar('--input-off');
+    ctx.beginPath();
+    ctx.arc(cx - 1, cy, btnR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Subtle highlight ring
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = value ? cssVar('--accent') : cssVar('--button-ring-off');
+    ctx.beginPath();
+    ctx.arc(cx - 1, cy, btnR + 2.2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Output side pin stub
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssVar('--symbol-stroke');
+    ctx.beginPath();
+    ctx.moveTo(cx + btnR + 2, cy);
+    ctx.lineTo(right + 1, cy);
+    ctx.stroke();
+
+    ctx.restore();
+    return;
+  }
+
+  if (type === 'output') {
+    const bulbR = Math.min(16, gh * 0.78);
+    const bulbCx = cx;
+    const bulbCy = cy - 1;
+
+    // Input pin to bulb
+    ctx.beginPath();
+    ctx.moveTo(left - 2, cy);
+    ctx.lineTo(bulbCx - bulbR - 2, cy);
+    ctx.stroke();
+
+    // Bulb glass
+    ctx.fillStyle = value ? 'rgba(255, 226, 120, 0.42)' : 'rgba(255, 255, 255, 0.03)';
+    ctx.beginPath();
+    ctx.arc(bulbCx, bulbCy, bulbR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Strong halo when ON
+    if (value) {
+      ctx.fillStyle = 'rgba(255, 214, 80, 0.20)';
+      ctx.beginPath();
+      ctx.arc(bulbCx, bulbCy, bulbR + 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 240, 170, 0.22)';
+      ctx.beginPath();
+      ctx.arc(bulbCx, bulbCy, bulbR + 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Filament
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = value ? '#ffe07a' : cssVar('--bulb-filament-off');
+    ctx.beginPath();
+    ctx.moveTo(bulbCx - 4, bulbCy + 2);
+    ctx.lineTo(bulbCx - 1.5, bulbCy - 1);
+    ctx.lineTo(bulbCx + 1.5, bulbCy - 1);
+    ctx.lineTo(bulbCx + 4, bulbCy + 2);
+    ctx.stroke();
+
+    // Bulb base
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssVar('--symbol-stroke');
+    ctx.beginPath();
+    ctx.moveTo(bulbCx - 4, bulbCy + bulbR + 1);
+    ctx.lineTo(bulbCx + 4, bulbCy + bulbR + 1);
+    ctx.stroke();
+
+    // Glow rays when ON
+    if (value) {
+      ctx.strokeStyle = 'rgba(255, 214, 80, 0.85)';
+      ctx.lineWidth = 1;
+      const rays = [
+        [0, -(bulbR + 3), 0, -(bulbR + 10)],
+        [bulbR + 2, -2, bulbR + 8, -5],
+        [-(bulbR + 2), -2, -(bulbR + 8), -5],
+        [bulbR - 1, 6, bulbR + 6, 10],
+        [-(bulbR - 1), 6, -(bulbR + 6), 10]
+      ];
+      rays.forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath();
+        ctx.moveTo(bulbCx + x1, bulbCy + y1);
+        ctx.lineTo(bulbCx + x2, bulbCy + y2);
+        ctx.stroke();
+      });
+    }
+
+    // Tiny output stub for consistency
+    ctx.beginPath();
+    ctx.moveTo(bulbCx + bulbR + 2, cy);
+    ctx.lineTo(right + 2, cy);
+    ctx.stroke();
+
+    ctx.restore();
+    return;
+  }
+
+  ctx.restore();
+}
+
+class Gate {
+  constructor(type, x, y) {
+    const config = getPortConfig(type);
+    this.type = type;
+    this.id = `${type}_${nextId++}`;
+    this.label = type.toUpperCase();
+    this.x = x; this.y = y;
+    this.w = 90; this.h = config.height;
+    this.value = false;
+    this.inputs = [];
+    this.inPorts = config.inPorts;
+    this.outPorts = config.outPorts;
+  }
+
+  getInPos(i) {
+    const geom = getGateGeometry(this.type, this.x, this.y, this.w, this.h);
+    if (!geom.inPins.length) return { x: this.x, y: this.y + this.h / 2 };
+    return geom.inPins[Math.min(i, geom.inPins.length - 1)];
+  }
+
+  getOutPos() {
+    const geom = getGateGeometry(this.type, this.x, this.y, this.w, this.h);
+    return geom.outPin;
+  }
+
+  getDeleteBadgePos() {
+    return { x: this.x + this.w + 8, y: this.y - 8, r: 9 };
+  }
+
+  draw() {
+    const isIO = this.type === 'input' || this.type === 'output';
+
+    // Selection outline
+    if (selectedComp === this) {
+      ctx.strokeStyle = cssVar('--selection-stroke'); ctx.lineWidth = 1;
+      ctx.strokeRect(this.x - 4, this.y - 4, this.w + 8, this.h + 8);
+
+      // Inline delete control for selected gate.
+      const del = this.getDeleteBadgePos();
+      ctx.fillStyle = '#e74c3c';
+      ctx.strokeStyle = '#ffd7d2';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(del.x, del.y, del.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(del.x - 3.2, del.y - 3.2);
+      ctx.lineTo(del.x + 3.2, del.y + 3.2);
+      ctx.moveTo(del.x + 3.2, del.y - 3.2);
+      ctx.lineTo(del.x - 3.2, del.y + 3.2);
+      ctx.stroke();
+    }
+
+    // Label above symbol
+    ctx.fillStyle = cssVar('--symbol-label'); ctx.font = "10px Inter"; ctx.textAlign = "center";
+    ctx.fillText(this.label, this.x + this.w/2, this.y + 12);
+
+    drawGateShape(this.type, this.x, this.y, this.w, this.h, this.value);
+
+    // Ports
+    ctx.lineWidth = 1;
+    for(let i=0; i<this.inPorts; i++) {
+      let p = this.getInPos(i);
+      ctx.fillStyle = (connectingFrom && connectingFrom.c === this && connectingFrom.p === i) ? cssVar('--port-connect-highlight') : (this.inputs[i] ? cssVar('--accent') : cssVar('--port-off'));
+      ctx.strokeStyle = cssVar('--port-ring');
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    }
+    if(this.outPorts) {
+      let p = this.getOutPos();
+      ctx.fillStyle = this.value ? cssVar('--accent') : cssVar('--port-off');
+      ctx.strokeStyle = cssVar('--port-ring');
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    }
+  }
+
+  eval() {
+    if(this.type==='input') return;
+    let a=this.inputs[0]||false, b=this.inputs[1]||false;
+    switch(this.type) {
+      case 'and': this.value = a&&b; break;
+      case 'or': this.value = a||b; break;
+      case 'not': this.value = !a; break;
+      case 'xor': this.value = a!==b; break;
+      case 'xnor': this.value = a===b; break;
+      case 'nand': this.value = !(a&&b); break;
+      case 'nor': this.value = !(a||b); break;
+      case 'output': this.value = a; break;
+    }
+  }
+}
+
+function getGateSymbol(t) {
+  const m = { and:'&', nand:'&', or:'≥1', nor:'≥1', not:'1', xor:'=1', xnor:'=0', input:'▶', output:'◀' };
+  return m[t] || '';
+}
+
+function validateWire(wire) {
+  // Check if target component exists
+  if (!wire.to || !wire.to.c || wire.to.c.type === 'input') return false;
+  // Check if port number is valid for the target
+  if (wire.to.p >= wire.to.c.inPorts) return false;
+  // Check if source exists
+  if (!wire.from || !wire.from.c || !wire.from.c.outPorts) return false;
+  return true;
+}
+
+function getErrorWires() {
+  return wires.filter(w => !validateWire(w));
+}
+
+function isPointNearWire(mx, my, wire, threshold = 8) {
+  let p1 = wire.from.c.getOutPos();
+  let p2 = wire.to.c.getInPos(wire.to.p);
+  
+  // Sample points along the Bezier curve and check distance
+  let cp = Math.max(Math.abs(p2.x - p1.x)/2, 30);
+  for (let t = 0; t <= 1; t += 0.05) {
+    // Bezier formula: B(t) = (1-t)³P0 + 3(1-t)²t P1 + 3(1-t)t²P2 + t³P3
+    let mt = 1 - t;
+    let x = mt*mt*mt*p1.x + 3*mt*mt*t*(p1.x+cp) + 3*mt*t*t*(p2.x-cp) + t*t*t*p2.x;
+    let y = mt*mt*mt*p1.y + 3*mt*mt*t*p1.y + 3*mt*t*t*p2.y + t*t*t*p2.y;
+    
+    if (Math.hypot(mx - x, my - y) < threshold) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function serializeCircuit() {
+  const data = {
+    components: components.map(c => ({
+      type: c.type,
+      x: c.x,
+      y: c.y,
+      label: c.label,
+      value: c.value
+    })),
+    wires: wires.map(w => {
+      const fromIdx = components.indexOf(w.from.c);
+      const toIdx = components.indexOf(w.to.c);
+      return { from: fromIdx, fromPort: w.from.p, to: toIdx, toPort: w.to.p };
+    })
+  };
+  return btoa(JSON.stringify(data));
+}
+
+function deserializeCircuit(encoded) {
+  try {
+    const data = JSON.parse(atob(encoded));
+    clearWorkspace();
+    
+    // Recreate components
+    data.components.forEach(comp => {
+      const gate = new Gate(comp.type, comp.x, comp.y);
+      gate.label = comp.label;
+      gate.value = comp.value;
+      components.push(gate);
+    });
+    
+    // Recreate wires
+    data.wires.forEach(w => {
+      if (w.from >= 0 && w.to >= 0 && w.from < components.length && w.to < components.length) {
+        wires.push({
+          from: { c: components[w.from], p: w.fromPort },
+          to: { c: components[w.to], p: w.toPort }
+        });
+      }
+    });
+    
+    selectedComp = null;
+    simulate();
+    return true;
+  } catch (e) {
+    console.error('Deserialization failed:', e);
+    return false;
+  }
+}
+
+function shareCircuit() {
+  const encoded = serializeCircuit();
+  const url = window.location.origin + window.location.pathname + '#circuit=' + encoded;
+  prompt('Share this link:', url);
+}
+
+function loadFromURL() {
+  const hash = window.location.hash.substring(1);
+  if (hash.startsWith('circuit=')) {
+    const encoded = hash.substring(8);
+    if (deserializeCircuit(encoded)) {
+      setMode('props');
+    }
+  }
+}
+
+function calculateScore() {
+  const nonIOGates = components.filter(c => c.type !== 'input' && c.type !== 'output').length;
+  const inputs = components.filter(c => c.type === 'input').length;
+  const outputs = components.filter(c => c.type === 'output').length;
+  const errorCount = getErrorWires().length;
+  
+  // Base efficiency: fewer gates is better, fewer wires is better
+  const gateScore = Math.max(0, 100 - nonIOGates * 5);
+  const wireScore = Math.max(0, 100 - wires.length * 3);
+  const errorPenalty = errorCount * 15;
+  
+  const overallScore = Math.max(0, (gateScore + wireScore) / 2 - errorPenalty);
+  
+  return {
+    score: Math.round(overallScore),
+    gates: nonIOGates,
+    wires: wires.length,
+    errors: errorCount,
+    inputs: inputs,
+    outputs: outputs
+  };
+}
+
+function clearWorkspace() {
+  components = [];
+  wires = [];
+  selectedComp = null;
+  draggedComp = null;
+  connectingFrom = null;
+  nextId = 1;
+  zoomLevel = 1;
+  panX = 0;
+  panY = 0;
+}
+
+function createGate(type, x, y, label) {
+  const gate = new Gate(type, x, y);
+  if (label) gate.label = label;
+  components.push(gate);
+  return gate;
+}
+
+function connect(fromGate, toGate, toPort) {
+  wires.push({ from: { c: fromGate, p: 0 }, to: { c: toGate, p: toPort } });
+}
+
+function buildBinaryGateDemo(type, outputLabel = 'Y') {
+  const a = createGate('input', 60, 110, 'A');
+  const b = createGate('input', 60, 230, 'B');
+  const gate = createGate(type, 250, 170, type.toUpperCase());
+  const y = createGate('output', 470, 185, outputLabel);
+  connect(a, gate, 0);
+  connect(b, gate, 1);
+  connect(gate, y, 0);
+}
+
+function buildNotDemo() {
+  const a = createGate('input', 80, 180, 'A');
+  const not = createGate('not', 270, 180, 'NOT');
+  const y = createGate('output', 460, 180, 'Y');
+  connect(a, not, 0);
+  connect(not, y, 0);
+}
+
+const EXAMPLES = {
+  and: {
+    title: 'AND Gate',
+    category: 'Fundamentals',
+    description: 'Two inputs feed a single AND gate. Output is HIGH only when both inputs are HIGH.',
+    build: () => buildBinaryGateDemo('and')
+  },
+  or: {
+    title: 'OR Gate',
+    category: 'Fundamentals',
+    description: 'Classic OR behavior with two switchable inputs and one output.',
+    build: () => buildBinaryGateDemo('or')
+  },
+  not: {
+    title: 'NOT Gate',
+    category: 'Fundamentals',
+    description: 'Single-input inverter for observing logic negation directly on the output.',
+    build: () => buildNotDemo()
+  },
+  nand: {
+    title: 'NAND Gate',
+    category: 'Fundamentals',
+    description: 'The NAND truth table, useful as a stepping stone toward universal-gate examples.',
+    build: () => buildBinaryGateDemo('nand')
+  },
+  nor: {
+    title: 'NOR Gate',
+    category: 'Fundamentals',
+    description: 'The NOR truth table, outputting HIGH only when both inputs are LOW.',
+    build: () => buildBinaryGateDemo('nor')
+  },
+  xor: {
+    title: 'XOR Gate',
+    category: 'Fundamentals',
+    description: 'Exclusive OR goes HIGH only when the two inputs differ.',
+    build: () => buildBinaryGateDemo('xor')
+  },
+  xnor: {
+    title: 'XNOR Gate',
+    category: 'Fundamentals',
+    description: 'Equality detector built from the new XNOR component. Output is HIGH when inputs match.',
+    build: () => buildBinaryGateDemo('xnor')
+  },
+  nandUniversal: {
+    title: 'NAND as Universal Gate',
+    category: 'Equivalences & Laws',
+    description: 'Implements OR using only NAND gates through De Morgan transformation.',
+    build: () => {
+      const a = createGate('input', 50, 110, 'A');
+      const b = createGate('input', 50, 250, 'B');
+      const na = createGate('nand', 210, 90, 'NAND');
+      const nb = createGate('nand', 210, 230, 'NAND');
+      const y = createGate('nand', 400, 160, 'OR');
+      const out = createGate('output', 560, 170, 'Y');
+      connect(a, na, 0); connect(a, na, 1);
+      connect(b, nb, 0); connect(b, nb, 1);
+      connect(na, y, 0); connect(nb, y, 1);
+      connect(y, out, 0);
+    }
+  },
+  deMorgan: {
+    title: 'De Morgan Visualizer',
+    category: 'Equivalences & Laws',
+    description: 'Places both sides of NOT(A OR B) = (NOT A) AND (NOT B) side by side for live comparison.',
+    build: () => {
+      const a = createGate('input', 40, 110, 'A');
+      const b = createGate('input', 40, 240, 'B');
+      const orGate = createGate('or', 200, 150, 'OR');
+      const leftNot = createGate('not', 360, 165, 'NOT');
+      const lhs = createGate('output', 520, 165, 'LHS');
+      const notA = createGate('not', 200, 300, 'NOT');
+      const notB = createGate('not', 200, 390, 'NOT');
+      const andGate = createGate('and', 360, 330, 'AND');
+      const rhs = createGate('output', 520, 345, 'RHS');
+      connect(a, orGate, 0); connect(b, orGate, 1);
+      connect(orGate, leftNot, 0); connect(leftNot, lhs, 0);
+      connect(a, notA, 0); connect(b, notB, 0);
+      connect(notA, andGate, 0); connect(notB, andGate, 1);
+      connect(andGate, rhs, 0);
+    }
+  },
+  halfAdder: {
+    title: 'Half Adder',
+    category: 'Arithmetic',
+    description: 'Computes SUM with XOR and CARRY with AND for two 1-bit operands.',
+    build: () => {
+      const a = createGate('input', 50, 120, 'A');
+      const b = createGate('input', 50, 260, 'B');
+      const xorGate = createGate('xor', 240, 120, 'SUM');
+      const andGate = createGate('and', 240, 250, 'CARRY');
+      const sum = createGate('output', 460, 135, 'SUM');
+      const carry = createGate('output', 460, 265, 'C');
+      connect(a, xorGate, 0); connect(b, xorGate, 1);
+      connect(a, andGate, 0); connect(b, andGate, 1);
+      connect(xorGate, sum, 0); connect(andGate, carry, 0);
+    }
+  },
+  fullAdder: {
+    title: 'Full Adder',
+    category: 'Arithmetic',
+    description: 'Combines A, B, and Cin into SUM and Carry-out using XOR, AND, and OR gates.',
+    build: () => {
+      const a = createGate('input', 40, 80, 'A');
+      const b = createGate('input', 40, 180, 'B');
+      const cin = createGate('input', 40, 280, 'Cin');
+      const xor1 = createGate('xor', 200, 110, 'X1');
+      const xor2 = createGate('xor', 380, 110, 'SUM');
+      const and1 = createGate('and', 200, 260, 'A.B');
+      const and2 = createGate('and', 380, 260, 'Cin.X1');
+      const orGate = createGate('or', 560, 260, 'Cout');
+      const sum = createGate('output', 570, 125, 'SUM');
+      const cout = createGate('output', 730, 275, 'Cout');
+      connect(a, xor1, 0); connect(b, xor1, 1);
+      connect(xor1, xor2, 0); connect(cin, xor2, 1);
+      connect(a, and1, 0); connect(b, and1, 1);
+      connect(cin, and2, 0); connect(xor1, and2, 1);
+      connect(and1, orGate, 0); connect(and2, orGate, 1);
+      connect(xor2, sum, 0); connect(orGate, cout, 0);
+    }
+  },
+  halfSubtractor: {
+    title: 'Half Subtractor',
+    category: 'Arithmetic',
+    description: 'Shows difference as A XOR B and borrow as (NOT A) AND B.',
+    build: () => {
+      const a = createGate('input', 50, 110, 'A');
+      const b = createGate('input', 50, 250, 'B');
+      const diffGate = createGate('xor', 240, 110, 'DIFF');
+      const notA = createGate('not', 220, 300, 'NOT');
+      const borrowGate = createGate('and', 390, 260, 'BORROW');
+      const diff = createGate('output', 460, 125, 'D');
+      const borrow = createGate('output', 560, 275, 'B');
+      connect(a, diffGate, 0); connect(b, diffGate, 1);
+      connect(a, notA, 0);
+      connect(notA, borrowGate, 0); connect(b, borrowGate, 1);
+      connect(diffGate, diff, 0); connect(borrowGate, borrow, 0);
+    }
+  },
+  fullSubtractor: {
+    title: 'Full Subtractor',
+    category: 'Arithmetic',
+    description: 'Computes difference and borrow-out for A - B - Bin using reusable intermediate signals.',
+    build: () => {
+      const a = createGate('input', 30, 70, 'A');
+      const b = createGate('input', 30, 170, 'B');
+      const bin = createGate('input', 30, 270, 'Bin');
+      const xor1 = createGate('xor', 190, 100, 'X1');
+      const xor2 = createGate('xor', 360, 100, 'DIFF');
+      const notA = createGate('not', 180, 290, 'NOT');
+      const and1 = createGate('and', 350, 250, 'T1');
+      const notX1 = createGate('not', 350, 340, 'NOT');
+      const and2 = createGate('and', 520, 310, 'T2');
+      const orGate = createGate('or', 680, 280, 'Bout');
+      const diff = createGate('output', 540, 115, 'D');
+      const bout = createGate('output', 830, 295, 'Bout');
+      connect(a, xor1, 0); connect(b, xor1, 1);
+      connect(xor1, xor2, 0); connect(bin, xor2, 1);
+      connect(a, notA, 0);
+      connect(notA, and1, 0); connect(b, and1, 1);
+      connect(xor1, notX1, 0);
+      connect(bin, and2, 0); connect(notX1, and2, 1);
+      connect(and1, orGate, 0); connect(and2, orGate, 1);
+      connect(xor2, diff, 0); connect(orGate, bout, 0);
+    }
+  },
+  mux2: {
+    title: '2-to-1 Multiplexer',
+    category: 'Routing & Selection',
+    description: 'Select line chooses whether input A or input B reaches the output.',
+    build: () => {
+      const a = createGate('input', 60, 100, 'A');
+      const b = createGate('input', 60, 220, 'B');
+      const sel = createGate('input', 60, 340, 'SEL');
+      const notSel = createGate('not', 200, 340, 'NOT');
+      const and1 = createGate('and', 340, 110, 'A.path');
+      const and2 = createGate('and', 340, 250, 'B.path');
+      const orGate = createGate('or', 520, 180, 'MUX');
+      const y = createGate('output', 700, 195, 'Y');
+      connect(a, and1, 0); connect(notSel, and1, 1);
+      connect(b, and2, 0); connect(sel, and2, 1);
+      connect(sel, notSel, 0);
+      connect(and1, orGate, 0); connect(and2, orGate, 1);
+      connect(orGate, y, 0);
+    }
+  },
+  mux4: {
+    title: '4-to-1 Multiplexer',
+    category: 'Routing & Selection',
+    description: 'Implements four input paths controlled by S1 and S0, then combines them into one output.',
+    build: () => {
+      const i0 = createGate('input', 30, 40, 'I0');
+      const i1 = createGate('input', 30, 130, 'I1');
+      const i2 = createGate('input', 30, 220, 'I2');
+      const i3 = createGate('input', 30, 310, 'I3');
+      const s1 = createGate('input', 30, 410, 'S1');
+      const s0 = createGate('input', 30, 500, 'S0');
+      const notS1 = createGate('not', 170, 410, 'NOT');
+      const notS0 = createGate('not', 170, 500, 'NOT');
+      const t0 = createGate('and', 320, 35, 'T0');
+      const p0 = createGate('and', 490, 35, 'P0');
+      const t1 = createGate('and', 320, 125, 'T1');
+      const p1 = createGate('and', 490, 125, 'P1');
+      const t2 = createGate('and', 320, 215, 'T2');
+      const p2 = createGate('and', 490, 215, 'P2');
+      const t3 = createGate('and', 320, 305, 'T3');
+      const p3 = createGate('and', 490, 305, 'P3');
+      const or1 = createGate('or', 670, 90, 'O1');
+      const or2 = createGate('or', 670, 270, 'O2');
+      const finalOr = createGate('or', 850, 180, 'MUX');
+      const y = createGate('output', 1020, 195, 'Y');
+      connect(s1, notS1, 0); connect(s0, notS0, 0);
+      connect(i0, t0, 0); connect(notS1, t0, 1); connect(t0, p0, 0); connect(notS0, p0, 1);
+      connect(i1, t1, 0); connect(notS1, t1, 1); connect(t1, p1, 0); connect(s0, p1, 1);
+      connect(i2, t2, 0); connect(s1, t2, 1); connect(t2, p2, 0); connect(notS0, p2, 1);
+      connect(i3, t3, 0); connect(s1, t3, 1); connect(t3, p3, 0); connect(s0, p3, 1);
+      connect(p0, or1, 0); connect(p1, or1, 1);
+      connect(p2, or2, 0); connect(p3, or2, 1);
+      connect(or1, finalOr, 0); connect(or2, finalOr, 1);
+      connect(finalOr, y, 0);
+    }
+  },
+  demux: {
+    title: '1-to-2 Demultiplexer',
+    category: 'Routing & Selection',
+    description: 'Routes a single data input to either Y0 or Y1 depending on the select line.',
+    build: () => {
+      const d = createGate('input', 50, 160, 'D');
+      const sel = createGate('input', 50, 310, 'SEL');
+      const notSel = createGate('not', 220, 310, 'NOT');
+      const y0Gate = createGate('and', 380, 120, 'Y0');
+      const y1Gate = createGate('and', 380, 260, 'Y1');
+      const y0 = createGate('output', 560, 135, 'Y0');
+      const y1 = createGate('output', 560, 275, 'Y1');
+      connect(sel, notSel, 0);
+      connect(d, y0Gate, 0); connect(notSel, y0Gate, 1);
+      connect(d, y1Gate, 0); connect(sel, y1Gate, 1);
+      connect(y0Gate, y0, 0); connect(y1Gate, y1, 0);
+    }
+  },
+  decoder24: {
+    title: '2-to-4 Decoder',
+    category: 'Routing & Selection',
+    description: 'Decodes A and B into four mutually exclusive outputs Y0 through Y3.',
+    build: () => {
+      const a = createGate('input', 40, 120, 'A');
+      const b = createGate('input', 40, 260, 'B');
+      const notA = createGate('not', 190, 120, 'NOT');
+      const notB = createGate('not', 190, 260, 'NOT');
+      const y0Gate = createGate('and', 380, 50, 'Y0');
+      const y1Gate = createGate('and', 380, 150, 'Y1');
+      const y2Gate = createGate('and', 380, 250, 'Y2');
+      const y3Gate = createGate('and', 380, 350, 'Y3');
+      const y0 = createGate('output', 570, 65, 'Y0');
+      const y1 = createGate('output', 570, 165, 'Y1');
+      const y2 = createGate('output', 570, 265, 'Y2');
+      const y3 = createGate('output', 570, 365, 'Y3');
+      connect(a, notA, 0); connect(b, notB, 0);
+      connect(notA, y0Gate, 0); connect(notB, y0Gate, 1);
+      connect(notA, y1Gate, 0); connect(b, y1Gate, 1);
+      connect(a, y2Gate, 0); connect(notB, y2Gate, 1);
+      connect(a, y3Gate, 0); connect(b, y3Gate, 1);
+      connect(y0Gate, y0, 0); connect(y1Gate, y1, 0); connect(y2Gate, y2, 0); connect(y3Gate, y3, 0);
+    }
+  },
+  comparator1: {
+    title: '1-bit Comparator',
+    category: 'Compare',
+    description: 'Generates A=B, A>B, and A<B outputs for two single-bit inputs.',
+    build: () => {
+      const a = createGate('input', 40, 120, 'A');
+      const b = createGate('input', 40, 250, 'B');
+      const eqGate = createGate('xnor', 240, 70, 'EQ');
+      const notB = createGate('not', 220, 220, 'NOT');
+      const gtGate = createGate('and', 400, 170, 'GT');
+      const notA = createGate('not', 220, 340, 'NOT');
+      const ltGate = createGate('and', 400, 300, 'LT');
+      const eq = createGate('output', 430, 85, 'EQ');
+      const gt = createGate('output', 580, 185, 'GT');
+      const lt = createGate('output', 580, 315, 'LT');
+      connect(a, eqGate, 0); connect(b, eqGate, 1);
+      connect(b, notB, 0); connect(a, gtGate, 0); connect(notB, gtGate, 1);
+      connect(a, notA, 0); connect(notA, ltGate, 0); connect(b, ltGate, 1);
+      connect(eqGate, eq, 0); connect(gtGate, gt, 0); connect(ltGate, lt, 0);
+    }
+  }
+};
+
+const EXAMPLE_GROUPS = ['Fundamentals', 'Equivalences & Laws', 'Arithmetic', 'Routing & Selection', 'Compare'];
+
+const UPCOMING_EXAMPLES = [
+  'SR Flip-Flop',
+  'JK Flip-Flop',
+  'D Flip-Flop',
+  'T Flip-Flop',
+  '2-bit / 4-bit Binary Counter',
+  'Ring Counter',
+  'Shift Register (SISO, SIPO)'
+];
+
+const CHALLENGES = [
+  {
+    tier: 'beginner',
+    title: 'Rebuild XNOR from Scratch',
+    description: 'Using only XOR and NOT, recreate an XNOR output and confirm it matches the built-in XNOR example.',
+    goal: 'Goal: produce HIGH only for 00 and 11.',
+    hint: 'Hint: invert the XOR output.',
+    exampleKey: 'xnor'
+  },
+  {
+    tier: 'beginner',
+    title: 'Universal NAND Drill',
+    description: 'Recreate an OR gate using only NAND blocks. Compare your result with the provided equivalence example.',
+    goal: 'Goal: verify the truth table matches OR for all four rows.',
+    hint: 'Hint: first build NOT A and NOT B with self-fed NANDs.',
+    exampleKey: 'nandUniversal'
+  },
+  {
+    tier: 'beginner',
+    title: 'Half Adder Without Labels',
+    description: 'Build the half adder manually, then rename each output yourself based on observed truth-table behavior.',
+    goal: 'Goal: identify which output is SUM and which is CARRY.',
+    hint: 'Hint: one output is active only for input 11.',
+    exampleKey: 'halfAdder'
+  },
+  {
+    tier: 'intermediate',
+    title: '4-to-1 MUX Compression',
+    description: 'Construct a 4-to-1 multiplexer and then try reducing its layout into a cleaner arrangement on the canvas.',
+    goal: 'Goal: keep functionality identical while improving readability.',
+    hint: 'Hint: split the circuit into four paths before combining them.',
+    exampleKey: 'mux4'
+  },
+  {
+    tier: 'intermediate',
+    title: 'Borrow Logic Check',
+    description: 'Implement a full subtractor and verify the borrow-out behavior row by row using the truth table panel.',
+    goal: 'Goal: confirm the circuit borrows whenever A is too small after Bin is considered.',
+    hint: 'Hint: break borrow into two partial conditions, then OR them.',
+    exampleKey: 'fullSubtractor'
+  },
+  {
+    tier: 'intermediate',
+    title: '2-to-4 Decoder Race',
+    description: 'Build the decoder from a blank canvas and test whether exactly one output is active for every input combination.',
+    goal: 'Goal: outputs must be mutually exclusive.',
+    hint: 'Hint: you need both complemented and uncomplemented input lines.',
+    exampleKey: 'decoder24'
+  },
+  {
+    tier: 'sequential',
+    title: 'SR Latch Planning Exercise',
+    description: 'Sketch how cross-coupled NOR or NAND gates would be arranged once stateful examples are added to the simulator.',
+    goal: 'Goal: identify where feedback loops must be placed.',
+    hint: 'Hint: this build lacks sequential-state components, so treat this as a design exercise.'
+  },
+  {
+    tier: 'sequential',
+    title: 'Shift Register Roadmap',
+    description: 'Draft the signal flow for SISO and SIPO shift registers, focusing on clocked storage stages and data propagation.',
+    goal: 'Goal: decide how many flip-flops are needed and how outputs should be exposed.',
+    hint: 'Hint: think in repeated stages rather than one large formula.'
+  },
+  {
+    tier: 'sequential',
+    title: 'Counter State Table',
+    description: 'Design the expected state sequence for a 2-bit or 4-bit binary counter before implementing it in a future sequential update.',
+    goal: 'Goal: map present state to next state clearly.',
+    hint: 'Hint: start from 00 and increment one state at a time.'
+  },
+  {
+    tier: 'advanced',
+    title: 'Ripple-Carry Expansion',
+    description: 'Chain multiple full adders together mentally or on paper to plan a 4-bit adder architecture.',
+    goal: 'Goal: determine how carry signals move across stages.',
+    hint: 'Hint: Cout of one stage becomes Cin of the next.',
+    exampleKey: 'fullAdder'
+  },
+  {
+    tier: 'advanced',
+    title: 'Comparator Upgrade',
+    description: 'Extend the 1-bit comparator idea into a 2-bit comparator with EQ, GT, and LT outputs.',
+    goal: 'Goal: avoid contradictory outputs while combining bit significance correctly.',
+    hint: 'Hint: the most significant bit decides first unless it is equal.',
+    exampleKey: 'comparator1'
+  },
+  {
+    tier: 'advanced',
+    title: 'Minimal-Gate De Morgan Proof',
+    description: 'Rebuild both sides of De Morgan’s law with the fewest gates you can manage while keeping the outputs equivalent.',
+    goal: 'Goal: reduce clutter without changing the truth table.',
+    hint: 'Hint: compare shared inverted signals before duplicating work.',
+    exampleKey: 'deMorgan'
+  }
+];
+
+function escapeHtml(text) {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+function syncModeButtons() {
+  Object.entries(navButtons).forEach(([mode, button]) => {
+    button.classList.toggle('active', mode === currentMode);
+  });
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  rightHeader.innerHTML = MODE_HEADERS[mode];
+  syncModeButtons();
+  updateUI();
+}
+
+function renderExampleBrowser() {
+  let html = '<div class="panel-note">Load prebuilt logic circuits so students can inspect wiring, toggle inputs, and compare behaviors against the truth table.</div>';
+  EXAMPLE_GROUPS.forEach(group => {
+    const items = Object.entries(EXAMPLES).filter(([, example]) => example.category === group);
+    if (!items.length) return;
+    html += `<div class="browser-section"><div class="browser-title">${group}</div><div class="browser-list">`;
+    items.forEach(([key, example]) => {
+      const isActive = currentExampleKey === key;
+      html += `
+        <div class="browser-card">
+          <div class="browser-meta">
+            <div class="browser-name">${escapeHtml(example.title)}</div>
+            <div class="browser-tag">${escapeHtml(example.category)}</div>
+          </div>
+          <div class="browser-desc">${escapeHtml(example.description)}</div>
+          <div class="browser-actions">
+            <button class="btn-inline ${isActive ? 'active' : ''}" onclick="loadExample('${key}')">${isActive ? 'Reload Example' : 'Load Example'}</button>
+          </div>
+        </div>`;
+    });
+    html += '</div></div>';
+  });
+  html += '<div class="browser-section"><div class="browser-title">Sequential Circuits Planned</div><div class="browser-list">';
+  UPCOMING_EXAMPLES.forEach(name => {
+    html += `
+      <div class="browser-card disabled">
+        <div class="browser-meta">
+          <div class="browser-name">${escapeHtml(name)}</div>
+          <div class="browser-tag">coming soon</div>
+        </div>
+        <div class="browser-desc">These examples need memory or clocked behavior, which this version of the simulator does not model yet.</div>
+      </div>`;
+  });
+  html += '</div></div>';
+  rightContent.innerHTML = html;
+}
+
+function formatTierLabel(tier) {
+  if (tier === 'beginner') return 'Beginner';
+  if (tier === 'intermediate') return 'Intermediate';
+  if (tier === 'sequential') return 'Sequential';
+  return 'Advanced';
+}
+
+function getChallengeStatusText(index) {
+  const state = challengeProgress[index] || 'pending';
+  if (state === 'done') return { label: 'Completed', css: 'done' };
+  if (state === 'started') return { label: 'In Progress', css: 'started' };
+  return { label: 'Not Started', css: 'pending' };
+}
+
+function getTruthTableSignature() {
+  const ins = components.filter(c => c.type === 'input');
+  const outs = components.filter(c => c.type === 'output');
+
+  if (!ins.length || !outs.length) return null;
+  if (ins.length > 8) return null;
+
+  const original = ins.map(i => i.value);
+  const rowCount = 1 << ins.length;
+  const columns = outs.map(() => '');
+
+  for (let r = 0; r < rowCount; r++) {
+    ins.forEach((input, idx) => {
+      const bit = (r >> (ins.length - 1 - idx)) & 1;
+      input.value = !!bit;
+    });
+    for (let k = 0; k < 6; k++) {
+      wires.forEach(w => w.to.c.inputs[w.to.p] = w.from.c.value);
+      components.forEach(c => { if (c.type !== 'input') c.eval(); });
+    }
+    outs.forEach((out, idx) => {
+      columns[idx] += out.value ? '1' : '0';
+    });
+  }
+
+  ins.forEach((input, idx) => { input.value = original[idx]; });
+  for (let k = 0; k < 6; k++) {
+    wires.forEach(w => w.to.c.inputs[w.to.p] = w.from.c.value);
+    components.forEach(c => c.eval());
+  }
+
+  return JSON.stringify({
+    inputs: ins.length,
+    outputs: outs.length,
+    columns: columns.sort()
+  });
+}
+
+function getExpectedChallengeSignature(exampleKey) {
+  if (exampleSignatureCache[exampleKey]) return exampleSignatureCache[exampleKey];
+
+  const snapshot = {
+    encoded: serializeCircuit(),
+    nextId,
+    currentExampleKey,
+    activeChallengeIndex,
+    panX,
+    panY,
+    zoomLevel,
+    mode: currentMode
+  };
+
+  clearWorkspace();
+  EXAMPLES[exampleKey].build();
+  const signature = getTruthTableSignature();
+
+  deserializeCircuit(snapshot.encoded);
+  nextId = snapshot.nextId;
+  currentExampleKey = snapshot.currentExampleKey;
+  activeChallengeIndex = snapshot.activeChallengeIndex;
+  panX = snapshot.panX;
+  panY = snapshot.panY;
+  zoomLevel = snapshot.zoomLevel;
+  setMode(snapshot.mode);
+
+  exampleSignatureCache[exampleKey] = signature;
+  return signature;
+}
+
+function startChallenge(index) {
+  activeChallengeIndex = index;
+  challengeProgress[index] = challengeProgress[index] === 'done' ? 'done' : 'started';
+  challengeFeedback = 'Challenge started. Build your circuit on the canvas, then click Check.';
+  clearWorkspace();
+  currentExampleKey = null;
+  setMode('challenges');
+  simulate();
+}
+
+function checkChallenge(index) {
+  const challenge = CHALLENGES[index];
+  if (!challenge) return;
+
+  activeChallengeIndex = index;
+
+  if (!challenge.exampleKey) {
+    challengeFeedback = 'This is a design-only challenge. Auto-check is unavailable for sequential planning tasks.';
+    challengeProgress[index] = challengeProgress[index] === 'done' ? 'done' : 'started';
+    updateUI();
+    return;
+  }
+
+  const errors = getErrorWires().length;
+  if (errors > 0) {
+    challengeFeedback = `Fix wiring issues first: ${errors} invalid connection(s) found.`;
+    challengeProgress[index] = 'started';
+    updateUI();
+    return;
+  }
+
+  const actual = getTruthTableSignature();
+  if (!actual) {
+    challengeFeedback = 'Add at least 1 input and 1 output before checking your solution.';
+    challengeProgress[index] = 'started';
+    updateUI();
+    return;
+  }
+
+  const expected = getExpectedChallengeSignature(challenge.exampleKey);
+  if (actual === expected) {
+    challengeFeedback = 'Correct! Your circuit matches the expected truth-table behavior.';
+    challengeProgress[index] = 'done';
+  } else {
+    challengeFeedback = 'Not correct yet. Compare your outputs across all input combinations and try again.';
+    challengeProgress[index] = 'started';
+  }
+  updateUI();
+}
+
+window.startChallenge = startChallenge;
+window.checkChallenge = checkChallenge;
+
+function renderChallengeBrowser() {
+  let html = '<div class="panel-note">Challenge prompts are grouped by difficulty so students can choose guided builds after studying an example. Sequential items are included as planning exercises for a later clocked version.</div>';
+  const orderedTiers = ['beginner', 'intermediate', 'sequential', 'advanced'];
+  orderedTiers.forEach(tier => {
+    const items = CHALLENGES.filter(challenge => challenge.tier === tier);
+    html += `<div class="browser-section"><div class="browser-title">${formatTierLabel(tier)} Challenges</div><div class="browser-list">`;
+    items.forEach(challenge => {
+      const challengeIndex = CHALLENGES.indexOf(challenge);
+      const status = getChallengeStatusText(challengeIndex);
+      const isActive = activeChallengeIndex === challengeIndex;
+      html += `
+        <div class="challenge-card ${challenge.tier}">
+          <div class="challenge-head">
+            <div class="challenge-name">${escapeHtml(challenge.title)}</div>
+            <div class="challenge-tier">${formatTierLabel(challenge.tier)}</div>
+          </div>
+          <div class="challenge-desc">${escapeHtml(challenge.description)}</div>
+          <div class="challenge-goal">${escapeHtml(challenge.goal)}</div>
+          <div class="challenge-status ${status.css}">Status: ${status.label}</div>
+          <div class="browser-actions" style="margin-top: 10px;">
+            <button class="btn-inline" onclick="startChallenge(${challengeIndex})">${isActive ? 'Restart Challenge' : 'Start Challenge'}</button>
+            <button class="btn-inline" onclick="checkChallenge(${challengeIndex})">Check Solution</button>
+            ${challenge.exampleKey ? `<button class="btn-inline" onclick="loadExample('${challenge.exampleKey}')">Load Related Example</button>` : ''}
+          </div>
+          ${isActive ? `<div class="challenge-checker"><div class="challenge-checker-title">Challenge Checker</div><div class="challenge-checker-msg ${challengeProgress[challengeIndex] === 'done' ? 'success' : (challengeFeedback ? 'fail' : '')}">${escapeHtml(challengeFeedback || 'Press Check Solution to validate your build.')}</div></div>` : ''}
+          <div class="challenge-hint">${escapeHtml(challenge.hint)}</div>
+        </div>`;
+    });
+    html += '</div></div>';
+  });
+  rightContent.innerHTML = html;
+}
+
+function loadExample(key) {
+  const example = EXAMPLES[key];
+  if (!example) return;
+  clearWorkspace();
+  example.build();
+  currentExampleKey = key;
+  selectedComp = components.find(component => component.type === 'output') || components[0] || null;
+  setMode('props');
+  simulate();
+}
+
+window.loadExample = loadExample;
+
+function simulate() {
+  for(let i=0; i<5; i++) {
+    wires.forEach(w => w.to.c.inputs[w.to.p] = w.from.c.value);
+    components.forEach(c => c.eval());
+  }
+  updateUI(); render();
+}
+
+function render() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  // Update zoom indicator
+  const zoomIndicator = document.getElementById('zoom-indicator');
+  if (zoomIndicator) {
+    zoomIndicator.textContent = `Zoom: ${Math.round(zoomLevel * 100)}%`;
+  }
+  
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoomLevel, zoomLevel);
+  
+  const errorWires = getErrorWires();
+  
+  // Wires (Bezier)
+  wires.forEach(w => {
+    let p1 = w.from.c.getOutPos(), p2 = w.to.c.getInPos(w.to.p);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y);
+    let cp = Math.max(Math.abs(p2.x - p1.x)/2, 30);
+    ctx.bezierCurveTo(p1.x+cp, p1.y, p2.x-cp, p2.y, p2.x, p2.y);
+    
+    const isError = errorWires.includes(w);
+    ctx.lineWidth = isError ? 3 : 2;
+    ctx.strokeStyle = isError ? cssVar('--wire-error') : (w.from.c.value ? cssVar('--accent') : cssVar('--wire-off'));
+    ctx.stroke();
+  });
+  
+  if(connectingFrom && window.mx) {
+    let p1 = connectingFrom.c.getOutPos();
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(window.mx, window.my);
+    ctx.lineWidth = 1.5; ctx.strokeStyle = cssVar('--wire-preview'); ctx.stroke();
+  }
+
+  components.forEach(c => c.draw());
+  
+  ctx.restore();
+}
+
+// ────────────────────────────────────────────────
+// Interaction
+// ────────────────────────────────────────────────
+let mx=0, my=0;
+
+container.addEventListener('dragover', e=>e.preventDefault());
+container.addEventListener('drop', e=> {
+  let t = e.dataTransfer.getData('text'); if(!t) return;
+  let r = canvas.getBoundingClientRect();
+  components.push(new Gate(t, e.clientX - r.left - 45, e.clientY - r.top - 32));
+  simulate();
+});
+document.querySelectorAll('.gate-tool').forEach(t => t.ondragstart = e => e.dataTransfer.setData('text', t.dataset.type));
+
+canvas.onmousedown = e => {
+  let r = canvas.getBoundingClientRect(); 
+  let rawX = e.clientX - r.left;
+  let rawY = e.clientY - r.top;
+  let mx = (rawX - panX) / zoomLevel;
+  let my = (rawY - panY) / zoomLevel;
+
+  // Use only left click for interaction and panning.
+  if (e.button !== 0) return;
+  
+  window.mx = mx; window.my = my;
+
+  // Click selected gate's inline delete X.
+  if (selectedComp) {
+    const del = selectedComp.getDeleteBadgePos();
+    if (Math.hypot(mx - del.x, my - del.y) <= del.r + 2) {
+      removeComponent(selectedComp);
+      return;
+    }
+  }
+  
+  // Output port click
+  for(let c of components) {
+    if(c.outPorts && Math.hypot(mx - c.getOutPos().x, my - c.getOutPos().y) < 12) {
+      connectingFrom = {c, p:0}; return;
+    }
+  }
+
+  // Wire click
+  for(let w of wires) {
+    if(isPointNearWire(mx, my, w)) {
+      wires = wires.filter(wire => wire !== w);
+      simulate();
+      render();
+      return;
+    }
+  }
+
+  // Gate click
+  for(let i=components.length-1; i>=0; i--) {
+    let c = components[i];
+    if(mx>c.x && mx<c.x+c.w && my>c.y && my<c.y+c.h) {
+      if(c.type==='input') { c.value = !c.value; simulate(); }
+      selectedComp = c; draggedComp = c; dragOffX = mx-c.x; dragOffY = my-c.y;
+      updateUI(); render(); return;
+    }
+  }
+
+  // Left-click on empty background starts panning.
+  isPanning = true;
+  panStartX = rawX;
+  panStartY = rawY;
+  selectedComp = null;
+  updateUI();
+  render();
+};
+
+canvas.onmousemove = e => {
+  let r = canvas.getBoundingClientRect();
+  let rawX = e.clientX - r.left;
+  let rawY = e.clientY - r.top;
+  let mx = (rawX - panX) / zoomLevel;
+  let my = (rawY - panY) / zoomLevel;
+  
+  // Panning
+  if (isPanning) {
+    panX += (rawX - panStartX);
+    panY += (rawY - panStartY);
+    panStartX = rawX;
+    panStartY = rawY;
+    render();
+    return;
+  }
+  
+  window.mx = mx; window.my = my;
+  if(draggedComp) { draggedComp.x = mx-dragOffX; draggedComp.y = my-dragOffY; render(); }
+  if(connectingFrom) render();
+};
+
+canvas.onmouseup = e => {
+  isPanning = false;
+  draggedComp = null;
+  if(connectingFrom) {
+    for(let c of components) {
+      for(let i=0; i<c.inPorts; i++) {
+        let p = c.getInPos(i);
+        if(Math.hypot(window.mx - p.x, window.my - p.y) < 12) {
+          wires = wires.filter(w => !(w.to.c===c && w.to.p===i));
+          wires.push({from: connectingFrom, to: {c, p:i}});
+        }
+      }
+    }
+    connectingFrom = null; simulate();
+  }
+};
+
+canvas.onwheel = e => {
+  e.preventDefault();
+  const oldZoom = zoomLevel;
+  zoomLevel += (e.deltaY > 0 ? -0.1 : 0.1);
+  zoomLevel = Math.max(0.5, Math.min(3, zoomLevel));
+  
+  // Adjust pan to zoom toward mouse position
+  let r = canvas.getBoundingClientRect();
+  let mouseX = e.clientX - r.left;
+  let mouseY = e.clientY - r.top;
+  
+  panX = mouseX - (mouseX - panX) * (zoomLevel / oldZoom);
+  panY = mouseY - (mouseY - panY) * (zoomLevel / oldZoom);
+  
+  render();
+};
+canvas.oncontextmenu = e => e.preventDefault();
+
+// ────────────────────────────────────────────────
+// UI Updates
+// ────────────────────────────────────────────────
+function updateUI() {
+  const exampleSuffix = currentExampleKey ? ` &nbsp;&nbsp; Example: ${EXAMPLES[currentExampleKey].title}` : '';
+  const score = calculateScore();
+  const scoreSuffix = score.errors > 0 ? ` &nbsp;&nbsp; ⚠ ${score.errors} error(s)` : ` &nbsp;&nbsp; Efficiency: ${score.score}%`;
+  counts.innerHTML = `Gates: ${score.gates} &nbsp;&nbsp; Wires: ${score.wires}${scoreSuffix}${exampleSuffix}`;
+
+  if (currentMode === 'examples') {
+    renderExampleBrowser();
+    return;
+  }
+
+  if (currentMode === 'challenges') {
+    renderChallengeBrowser();
+    return;
+  }
+
+  if (currentMode === 'props') {
+    if(!selectedComp) {
+      rightContent.innerHTML = '<div class="empty-state">Select a gate to view properties, or open Examples to load a prepared circuit.</div>';
+      return;
+    }
+    rightContent.innerHTML = `
+      <div class="prop-group"><div class="prop-label">ID</div><div class="prop-value">${selectedComp.id}</div></div>
+      <div class="prop-group"><div class="prop-label">Label</div>
+        <input class="prop-input" id="inp-label" value="${selectedComp.label}" onkeyup="updateLabel(event)">
+      </div>
+      <button class="btn-action btn-danger" onclick="delSelected()">Delete Component</button>
+    `;
+    return;
+  }
+
+  let ins = components.filter(c=>c.type==='input'), outs = components.filter(c=>c.type==='output');
+  if(!ins.length || !outs.length) { rightContent.innerHTML='<div class="empty-state">Requires at least 1 input and 1 output.</div>'; return; }
+  
+  let html = '<table id="truth-table-view"><thead><tr>';
+  ins.forEach(i => html+=`<th>${i.label}</th>`); outs.forEach(o => html+=`<th>${o.label}</th>`);
+  html += '</tr></thead><tbody>';
+
+  let orig = ins.map(i=>i.value);
+  let currentRow = orig.reduce((acc, v, idx) => acc | ((v?1:0) << (ins.length-1-idx)), 0);
+  let rows = 1<<ins.length;
+  for(let r=0; r<rows; r++) {
+    html += r===currentRow ? '<tr class="current-row">' : '<tr>';
+    ins.forEach((c, idx) => {
+      let bit = (r >> (ins.length-1-idx)) & 1; c.value = !!bit;
+      html += `<td class="${bit?'active-bit':''}">${bit}</td>`;
+    });
+    for(let j=0; j<5; j++) { wires.forEach(w=>w.to.c.inputs[w.to.p]=w.from.c.value); components.forEach(c=> {if(c.type!=='input')c.eval()}); }
+    outs.forEach(o => { let v = o.value?1:0; html += `<td class="${v?'active-bit':''}">${v}</td>`; });
+    html+='</tr>';
+  }
+  ins.forEach((c, idx) => c.value = orig[idx]);
+  for(let k=0; k<5; k++) { wires.forEach(w=>w.to.c.inputs[w.to.p]=w.from.c.value); components.forEach(c=>c.eval()); }
+  rightContent.innerHTML = html + '</tbody></table>';
+}
+
+window.updateLabel = e => { if(selectedComp && e.key==='Enter') { selectedComp.label = e.target.value; render(); } };
+function removeComponent(comp) {
+  if (!comp) return false;
+  components = components.filter(c => c !== comp);
+  wires = wires.filter(w => w.from.c !== comp && w.to.c !== comp);
+  if (selectedComp === comp) selectedComp = null;
+  simulate();
+  return true;
+}
+
+window.delSelected = () => removeComponent(selectedComp);
+
+navButtons.examples.onclick = () => setMode('examples');
+navButtons.challenges.onclick = () => setMode('challenges');
+navButtons.props.onclick = () => setMode('props');
+navButtons.tt.onclick = () => setMode('tt');
+btnTheme.onclick = () => setTheme(document.body.classList.contains('light-mode') ? 'dark' : 'light');
+document.getElementById('btn-clear').onclick = () => {
+  clearWorkspace();
+  currentExampleKey = null;
+  simulate();
+};
+
+window.addEventListener('keydown', e => {
+  const targetTag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+  const typingInField = targetTag === 'input' || targetTag === 'textarea';
+  if (typingInField) return;
+
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (window.delSelected()) {
+      e.preventDefault();
+    }
+  }
+});
+
+setTimeout(resize, 100);
+setTimeout(() => {
+  initTheme();
+  loadFromURL();
+  if (!currentExampleKey) setMode('examples');
+}, 120);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
