@@ -833,6 +833,32 @@
         max-height: min(65vh, 540px);
       }
 
+      /* On mobile: hide the default right panel — content moves to left panel */
+      #right-panel {
+        display: none;
+      }
+
+      /* When a non-component mode is active, expand the left panel and swap content */
+      #left-panel.mode-panel-active {
+        max-height: min(65vh, 540px);
+      }
+
+      #left-panel.mode-panel-active > .panel-content {
+        display: none;
+      }
+
+      #left-panel.mode-panel-active #mobile-section-nav {
+        display: flex;
+      }
+
+      #left-panel.mode-panel-active #left-mode-panel {
+        display: flex !important;
+      }
+
+      #btn-back-to-components {
+        display: inline-flex;
+      }
+
       #btn-components-toggle {
         display: inline-flex;
       }
@@ -1011,6 +1037,16 @@
         </div>
 
       </div>
+
+      <!-- Mobile-only mode panel: shows Examples/Challenges/Properties/Truth Table inside left panel -->
+      <div id="left-mode-panel" style="display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden;">
+        <div class="panel-header" id="left-mode-header">
+          <span id="left-mode-title"><i class="ph ph-stack"></i> EXAMPLES</span>
+          <button type="button" id="btn-back-to-components" aria-label="Back to components" title="Back to components"><i class="ph ph-caret-left"></i></button>
+        </div>
+        <div class="panel-content" id="left-mode-content"></div>
+      </div>
+
     </div>
 
     <div id="center-panel">
@@ -1068,6 +1104,20 @@ const btnZoomReset = document.getElementById('btn-zoom-reset');
 const mobileSectionButtons = document.querySelectorAll('[data-mobile-section]');
 const leftPanel = document.getElementById('left-panel');
 const btnComponentsToggle = document.getElementById('btn-components-toggle');
+const leftModePanel = document.getElementById('left-mode-panel');
+const leftModeHeader = document.getElementById('left-mode-header');
+const leftModeTitle = document.getElementById('left-mode-title');
+const leftModeContent = document.getElementById('left-mode-content');
+const btnBackToComponents = document.getElementById('btn-back-to-components');
+if (btnBackToComponents) {
+  btnBackToComponents.addEventListener('click', () => handleMobileSectionAction('components'));
+}
+
+// Returns the content container to write mode content into
+// (left-mode-content on mobile, right-content on desktop)
+function getModeContentEl() {
+  return (isMobileLayout() && leftModeContent) ? leftModeContent : rightContent;
+}
 
 let components = []; let wires = [];
 let selectedComp = null; let draggedComp = null; let connectingFrom = null;
@@ -1194,14 +1244,24 @@ function handleMobileSectionAction(action) {
   const rightPanel = document.getElementById('right-panel');
 
   if (action === 'components') {
+    leftPanel.classList.remove('mode-panel-active');
     setComponentsCollapsed(false);
     scrollToPanel(leftPanel);
     return;
   }
 
   if (action === 'examples' || action === 'challenges' || action === 'props' || action === 'tt') {
+    if (isMobileLayout()) {
+      leftPanel.classList.remove('collapsed');
+      leftPanel.classList.add('mode-panel-active');
+      if (leftModeTitle) leftModeTitle.innerHTML = MODE_HEADERS[action];
+    }
     setMode(action);
-    scrollToPanel(rightPanel);
+    if (isMobileLayout()) {
+      scrollToPanel(leftPanel);
+    } else {
+      scrollToPanel(rightPanel);
+    }
   }
 }
 
@@ -2170,6 +2230,10 @@ function syncModeButtons() {
 function setMode(mode) {
   currentMode = mode;
   rightHeader.innerHTML = MODE_HEADERS[mode];
+  // On mobile, sync the left-panel mode header title (only if mode panel is already active)
+  if (isMobileLayout() && leftModeTitle && leftPanel.classList.contains('mode-panel-active')) {
+    leftModeTitle.innerHTML = MODE_HEADERS[mode];
+  }
   syncModeButtons();
   updateUI();
 }
@@ -2208,7 +2272,7 @@ function renderExampleBrowser() {
       </div>`;
   });
   html += '</div></div>';
-  rightContent.innerHTML = html;
+  getModeContentEl().innerHTML = html;
 }
 
 function formatTierLabel(tier) {
@@ -2377,7 +2441,7 @@ function renderChallengeBrowser() {
     });
     html += '</div></div>';
   });
-  rightContent.innerHTML = html;
+  getModeContentEl().innerHTML = html;
 }
 
 function loadExample(key) {
@@ -2735,10 +2799,10 @@ function updateUI() {
 
   if (currentMode === 'props') {
     if(!selectedComp) {
-      rightContent.innerHTML = '<div class="empty-state">Select a gate to view properties, or open Examples to load a prepared circuit.</div>';
+      getModeContentEl().innerHTML = '<div class="empty-state">Select a gate to view properties, or open Examples to load a prepared circuit.</div>';
       return;
     }
-    rightContent.innerHTML = `
+    getModeContentEl().innerHTML = `
       <div class="prop-group"><div class="prop-label">ID</div><div class="prop-value">${selectedComp.id}</div></div>
       <div class="prop-group"><div class="prop-label">Label</div>
         <input class="prop-input" id="inp-label" value="${selectedComp.label}" onkeyup="updateLabel(event)">
@@ -2749,7 +2813,7 @@ function updateUI() {
   }
 
   let ins = components.filter(c=>c.type==='input'), outs = components.filter(c=>c.type==='output');
-  if(!ins.length || !outs.length) { rightContent.innerHTML='<div class="empty-state">Requires at least 1 input and 1 output.</div>'; return; }
+  if(!ins.length || !outs.length) { getModeContentEl().innerHTML='<div class="empty-state">Requires at least 1 input and 1 output.</div>'; return; }
   
   let html = '<div class="table-responsive"><table id="truth-table-view" class="align-middle"><thead><tr>';
   ins.forEach(i => html+=`<th>${i.label}</th>`); outs.forEach(o => html+=`<th>${o.label}</th>`);
@@ -2770,7 +2834,7 @@ function updateUI() {
   }
   ins.forEach((c, idx) => c.value = orig[idx]);
   for(let k=0; k<5; k++) { wires.forEach(w=>w.to.c.inputs[w.to.p]=w.from.c.value); components.forEach(c=>c.eval()); }
-  rightContent.innerHTML = html + '</tbody></table></div>';
+  getModeContentEl().innerHTML = html + '</tbody></table></div>';
 }
 
 window.updateLabel = e => { if(selectedComp && e.key==='Enter') { selectedComp.label = e.target.value; render(); } };
