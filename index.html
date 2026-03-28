@@ -219,6 +219,13 @@
       border-left: 1px solid var(--border-color);
       display: flex; flex-direction: column;
       min-height: 0;
+      transition: width 0.22s ease, border-color 0.22s ease;
+      overflow: hidden;
+    }
+
+    #right-panel.collapsed {
+      width: 0;
+      border-left-color: transparent;
     }
 
     .panel-header {
@@ -227,6 +234,56 @@
       display: flex; align-items: center; gap: 8px;
       color: var(--text-main);
       border-bottom: 1px solid var(--border-color);
+    }
+
+    #right-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    #btn-right-panel-toggle,
+    #btn-right-panel-show {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background: transparent;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #btn-right-panel-toggle {
+      margin-left: auto;
+    }
+
+    #btn-right-panel-toggle:hover,
+    #btn-right-panel-toggle:focus,
+    #btn-right-panel-show:hover,
+    #btn-right-panel-show:focus {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+      box-shadow: none;
+    }
+
+    #btn-right-panel-show {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 4;
+      display: none;
+      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    #btn-right-panel-show.visible {
+      display: inline-flex;
     }
 
     #btn-components-toggle {
@@ -332,10 +389,11 @@
     #mobile-canvas-controls .btn {
       min-width: 48px;
       border-radius: 12px;
-      border-color: rgba(0, 230, 210, 0.24);
-      background: rgba(13, 13, 13, 0.82);
+      border-color: var(--border-light);
+      background: var(--bg-panel);
       color: var(--text-main);
       backdrop-filter: blur(12px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
     }
 
     #mobile-canvas-controls .btn:hover,
@@ -386,6 +444,12 @@
       color: var(--accent);
       background: var(--accent-dim);
       box-shadow: none;
+    }
+
+    .mobile-quick-btn.active {
+      border-color: rgba(0, 230, 210, 0.35);
+      color: var(--accent);
+      background: var(--accent-dim);
     }
 
     #status-bar {
@@ -783,8 +847,6 @@
         justify-content: space-between;
       }
 
-      .brand-version,
-      .live-badge,
       .divider {
         display: none;
       }
@@ -825,8 +887,22 @@
       }
 
       #left-panel {
+        display: flex;
+        flex-direction: column;
         border-bottom: 1px solid var(--border-color);
         max-height: min(34vh, 320px);
+      }
+
+      #left-panel > .panel-header {
+        flex-shrink: 0;
+      }
+
+      #mobile-section-nav {
+        order: -1;
+        flex-shrink: 0;
+        margin: 10px 12px 0;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
       }
 
       #left-panel.mode-expanded {
@@ -838,12 +914,20 @@
         display: none;
       }
 
+      #btn-right-panel-show {
+        display: none !important;
+      }
+
       /* When a non-component mode is active, expand the left panel and swap content */
       #left-panel.mode-panel-active {
         max-height: min(65vh, 540px);
       }
 
       #left-panel.mode-panel-active > .panel-content {
+        display: none;
+      }
+
+      #left-panel.mode-panel-active > .panel-header {
         display: none;
       }
 
@@ -917,8 +1001,7 @@
 
       #mobile-section-nav {
         display: flex;
-        margin: 0 12px;
-        border-radius: 10px;
+        margin: 10px 12px 0;
       }
 
       .welcome-card {
@@ -1050,6 +1133,7 @@
     </div>
 
     <div id="center-panel">
+      <button type="button" id="btn-right-panel-show" aria-label="Show right panel" title="Show panel"><i class="ph ph-sidebar-simple"></i></button>
       <div id="canvas-container">
         <canvas id="canvas"></canvas>
         <div id="mobile-canvas-controls" class="d-lg-none" aria-label="Canvas controls">
@@ -1076,7 +1160,10 @@
     </div>
 
     <div id="right-panel">
-      <div class="panel-header" id="right-header"><i class="ph ph-gear"></i> PROPERTIES</div>
+      <div class="panel-header" id="right-header">
+        <span id="right-title"><i class="ph ph-gear"></i> PROPERTIES</span>
+        <button type="button" id="btn-right-panel-toggle" aria-label="Hide right panel" title="Hide panel"><i class="ph ph-caret-right"></i></button>
+      </div>
       <div class="panel-content" id="right-content">
         </div>
     </div>
@@ -1090,7 +1177,10 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const container = document.getElementById('canvas-container');
-const rightHeader = document.getElementById('right-header');
+const rightTitle = document.getElementById('right-title');
+const rightPanel = document.getElementById('right-panel');
+const btnRightPanelToggle = document.getElementById('btn-right-panel-toggle');
+const btnRightPanelShow = document.getElementById('btn-right-panel-show');
 const rightContent = document.getElementById('right-content');
 const counts = document.getElementById('counts');
 const btnTheme = document.getElementById('btn-theme');
@@ -1234,18 +1324,40 @@ function setComponentsCollapsed(collapsed) {
     : '<i class="ph ph-caret-up"></i>';
 }
 
+function setRightPanelCollapsed(collapsed) {
+  if (!rightPanel || !btnRightPanelToggle || !btnRightPanelShow) return;
+  const isCollapsed = !!collapsed;
+  rightPanel.classList.toggle('collapsed', isCollapsed);
+
+  btnRightPanelToggle.setAttribute('aria-label', isCollapsed ? 'Show right panel' : 'Hide right panel');
+  btnRightPanelToggle.title = isCollapsed ? 'Show panel' : 'Hide panel';
+  btnRightPanelToggle.innerHTML = isCollapsed
+    ? '<i class="ph ph-caret-left"></i>'
+    : '<i class="ph ph-caret-right"></i>';
+
+  btnRightPanelShow.classList.toggle('visible', isCollapsed && !isMobileLayout());
+}
+
 function scrollToPanel(panel) {
   if (!panel) return;
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function syncMobileQuickButtons(activeSection) {
+  mobileSectionButtons.forEach(button => {
+    const isActive = button.dataset.mobileSection === activeSection;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
 function handleMobileSectionAction(action) {
-  const leftPanel = document.getElementById('left-panel');
-  const rightPanel = document.getElementById('right-panel');
+  if (!leftPanel) return;
 
   if (action === 'components') {
     leftPanel.classList.remove('mode-panel-active');
     setComponentsCollapsed(false);
+    syncMobileQuickButtons('components');
     scrollToPanel(leftPanel);
     return;
   }
@@ -1257,6 +1369,7 @@ function handleMobileSectionAction(action) {
       if (leftModeTitle) leftModeTitle.innerHTML = MODE_HEADERS[action];
     }
     setMode(action);
+    syncMobileQuickButtons(action);
     if (isMobileLayout()) {
       scrollToPanel(leftPanel);
     } else {
@@ -1303,7 +1416,9 @@ window.addEventListener('resize', resize);
 if (mobileLayoutQuery.addEventListener) {
   mobileLayoutQuery.addEventListener('change', () => {
     setComponentsCollapsed(false);
+    setRightPanelCollapsed(false);
     updateInteractionHint();
+    syncMobileQuickButtons(leftPanel && leftPanel.classList.contains('mode-panel-active') ? currentMode : 'components');
   });
 }
 
@@ -2229,10 +2344,13 @@ function syncModeButtons() {
 
 function setMode(mode) {
   currentMode = mode;
-  rightHeader.innerHTML = MODE_HEADERS[mode];
+  if (rightTitle) rightTitle.innerHTML = MODE_HEADERS[mode];
   // On mobile, sync the left-panel mode header title (only if mode panel is already active)
   if (isMobileLayout() && leftModeTitle && leftPanel.classList.contains('mode-panel-active')) {
     leftModeTitle.innerHTML = MODE_HEADERS[mode];
+  }
+  if (isMobileLayout()) {
+    syncMobileQuickButtons(leftPanel && leftPanel.classList.contains('mode-panel-active') ? mode : 'components');
   }
   syncModeButtons();
   updateUI();
@@ -2408,9 +2526,26 @@ function checkChallenge(index) {
   updateUI();
 }
 
+
+function loadRelatedChallengeExample(index) {
+  const challenge = CHALLENGES[index];
+  if (!challenge) return;
+
+  activeChallengeIndex = index;
+
+  if (challenge.exampleKey) {
+    loadExample(challenge.exampleKey);
+    return;
+  }
+
+  challengeFeedback = 'Related sequential examples are coming soon in a future update.';
+  challengeProgress[index] = challengeProgress[index] === 'done' ? 'done' : 'started';
+  setMode('challenges');
+}
 window.startChallenge = startChallenge;
 window.checkChallenge = checkChallenge;
 
+window.loadRelatedChallengeExample = loadRelatedChallengeExample;
 function renderChallengeBrowser() {
   let html = '<div class="panel-note">Challenge prompts are grouped by difficulty so students can choose guided builds after studying an example. Sequential items are included as planning exercises for a later clocked version.</div>';
   const orderedTiers = ['beginner', 'intermediate', 'sequential', 'advanced'];
@@ -2433,7 +2568,7 @@ function renderChallengeBrowser() {
           <div class="browser-actions" style="margin-top: 10px;">
             <button class="btn-inline" onclick="startChallenge(${challengeIndex})">${isActive ? 'Restart Challenge' : 'Start Challenge'}</button>
             <button class="btn-inline" onclick="checkChallenge(${challengeIndex})">Check Solution</button>
-            ${challenge.exampleKey ? `<button class="btn-inline" onclick="loadExample('${challenge.exampleKey}')">Load Related Example</button>` : ''}
+            <button class="btn-inline" onclick="loadRelatedChallengeExample(${challengeIndex})">Load Related Example</button>
           </div>
           ${isActive ? `<div class="challenge-checker"><div class="challenge-checker-title">Challenge Checker</div><div class="challenge-checker-msg ${challengeProgress[challengeIndex] === 'done' ? 'success' : (challengeFeedback ? 'fail' : '')}">${escapeHtml(challengeFeedback || 'Press Check Solution to validate your build.')}</div></div>` : ''}
           <div class="challenge-hint">${escapeHtml(challenge.hint)}</div>
@@ -2778,6 +2913,17 @@ if (btnComponentsToggle) {
   });
 }
 
+if (btnRightPanelToggle) {
+  btnRightPanelToggle.addEventListener('click', () => {
+    const isCollapsed = rightPanel && rightPanel.classList.contains('collapsed');
+    setRightPanelCollapsed(!isCollapsed);
+  });
+}
+
+if (btnRightPanelShow) {
+  btnRightPanelShow.addEventListener('click', () => setRightPanelCollapsed(false));
+}
+
 // ────────────────────────────────────────────────
 // UI Updates
 // ────────────────────────────────────────────────
@@ -2891,6 +3037,7 @@ setTimeout(() => {
   updateInteractionHint();
   loadFromURL();
   if (!currentExampleKey) setMode('examples');
+  syncMobileQuickButtons('components');
   showWelcomeModal();
 }, 120);
 </script>
