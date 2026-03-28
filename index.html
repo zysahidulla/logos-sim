@@ -140,13 +140,6 @@
       color: var(--accent);
     }
 
-    #btn-mobile-menu {
-      display: none;
-      min-width: 40px;
-      justify-content: center;
-      padding: 6px 10px;
-    }
-
     #undo-redo-bar {
       display: flex; align-items: center; gap: 12px;
       padding: 6px 12px;
@@ -316,6 +309,9 @@
       background: linear-gradient(180deg, rgba(0, 230, 210, 0.05), rgba(0, 0, 0, 0));
       overflow-x: auto;
       scrollbar-width: none;
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
 
     #mobile-quick-nav::-webkit-scrollbar {
@@ -336,6 +332,7 @@
       align-items: center;
       gap: 6px;
       white-space: nowrap;
+      min-height: 34px;
     }
 
     .mobile-quick-btn:hover,
@@ -720,17 +717,16 @@
         height: auto;
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
-        padding: 12px;
+        gap: 8px;
+        padding: 10px 12px;
       }
 
       .nav-left,
       .nav-right {
-        gap: 10px;
+        gap: 8px;
         width: 100%;
-        overflow-x: auto;
-        padding-bottom: 2px;
-        scrollbar-width: none;
+        overflow: visible;
+        padding-bottom: 0;
       }
 
       .nav-left::-webkit-scrollbar,
@@ -738,9 +734,27 @@
         display: none;
       }
 
+      .nav-left {
+        justify-content: space-between;
+      }
+
+      .brand-version,
+      .live-badge,
+      .divider {
+        display: none;
+      }
+
+      .nav-right {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .nav-btn {
-        flex: 0 0 auto;
+        width: 100%;
+        justify-content: center;
         min-height: 40px;
+        padding: 8px 6px;
+        font-size: 0.68rem;
         white-space: nowrap;
       }
 
@@ -750,10 +764,6 @@
       #btn-tt,
       #btn-props {
         display: none;
-      }
-
-      #btn-mobile-menu {
-        display: inline-flex;
       }
 
       #workspace {
@@ -817,32 +827,6 @@
         display: flex;
       }
 
-      body.mobile-canvas-focus #left-panel,
-      body.mobile-canvas-focus #right-panel,
-      body.mobile-canvas-focus #status-bar,
-      body.mobile-canvas-focus #undo-redo-bar,
-      body.mobile-canvas-focus #mobile-quick-nav {
-        display: none;
-      }
-
-      body.mobile-canvas-focus #top-nav {
-        padding: 10px 12px;
-        gap: 8px;
-      }
-
-      body.mobile-canvas-focus .nav-left,
-      body.mobile-canvas-focus .nav-right {
-        display: none;
-      }
-
-      body.mobile-canvas-focus #center-panel {
-        min-height: calc(100dvh - 70px);
-      }
-
-      body.mobile-canvas-focus #mobile-canvas-controls {
-        bottom: 20px;
-      }
-
       .welcome-card {
         padding: 24px 18px 18px;
       }
@@ -882,7 +866,6 @@
   </div>
 
   <div id="top-nav">
-    <button class="nav-btn" id="btn-mobile-menu" aria-label="Enter full canvas view" title="Enter full canvas view"><i class="ph ph-list"></i></button>
     <div class="nav-left">
       <div class="brand">
         <span class="brand-name">LOGOS</span>
@@ -1008,7 +991,6 @@ const rightHeader = document.getElementById('right-header');
 const rightContent = document.getElementById('right-content');
 const counts = document.getElementById('counts');
 const btnTheme = document.getElementById('btn-theme');
-const btnMobileMenu = document.getElementById('btn-mobile-menu');
 const statusHint = document.getElementById('status-hint');
 const welcomeModal = document.getElementById('welcome-modal');
 const welcomeClose = document.getElementById('welcome-close');
@@ -1118,23 +1100,8 @@ function usesTapToAdd() {
 function updateInteractionHint() {
   if (!statusHint) return;
   statusHint.textContent = usesTapToAdd()
-    ? 'Use quick actions below canvas • Tap Components then tap gate to add • Tap 3-bars for full-canvas mode'
+    ? 'Use quick actions below canvas • Tap Components then tap a gate to add • Use +/- to zoom'
     : 'Drag to add • Hold left-click on empty background to pan • Scroll to zoom';
-}
-
-function syncMobileMenuButton() {
-  if (!btnMobileMenu) return;
-  const focused = document.body.classList.contains('mobile-canvas-focus');
-  btnMobileMenu.innerHTML = focused ? '<i class="ph ph-x"></i>' : '<i class="ph ph-list"></i>';
-  btnMobileMenu.title = focused ? 'Exit full canvas view' : 'Enter full canvas view';
-  btnMobileMenu.setAttribute('aria-label', focused ? 'Exit full canvas view' : 'Enter full canvas view');
-}
-
-function setMobileCanvasFocus(enabled) {
-  if (!isMobileLayout()) return;
-  document.body.classList.toggle('mobile-canvas-focus', !!enabled);
-  syncMobileMenuButton();
-  setTimeout(resize, 80);
 }
 
 function scrollToPanel(panel) {
@@ -1148,12 +1115,10 @@ function handleMobileQuickAction(action) {
   const centerPanel = document.getElementById('center-panel');
 
   if (action === 'workspace') {
-    setMobileCanvasFocus(true);
     scrollToPanel(centerPanel);
     return;
   }
 
-  setMobileCanvasFocus(false);
   if (action === 'components') {
     scrollToPanel(leftPanel);
     return;
@@ -1202,10 +1167,6 @@ function resize() {
 window.addEventListener('resize', resize);
 if (mobileLayoutQuery.addEventListener) {
   mobileLayoutQuery.addEventListener('change', () => {
-    if (!mobileLayoutQuery.matches) {
-      document.body.classList.remove('mobile-canvas-focus');
-    }
-    syncMobileMenuButton();
     updateInteractionHint();
   });
 }
@@ -2664,13 +2625,6 @@ if (btnZoomReset) {
   });
 }
 
-if (btnMobileMenu) {
-  btnMobileMenu.addEventListener('click', () => {
-    if (!isMobileLayout()) return;
-    setMobileCanvasFocus(!document.body.classList.contains('mobile-canvas-focus'));
-  });
-}
-
 mobileQuickButtons.forEach(button => {
   button.addEventListener('click', () => {
     handleMobileQuickAction(button.dataset.mobileAction);
@@ -2786,7 +2740,6 @@ window.addEventListener('keydown', e => {
 setTimeout(resize, 100);
 setTimeout(() => {
   initTheme();
-  syncMobileMenuButton();
   updateInteractionHint();
   loadFromURL();
   if (!currentExampleKey) setMode('examples');
