@@ -307,6 +307,45 @@
       box-shadow: none;
     }
 
+    #mobile-quick-nav {
+      display: none;
+      gap: 8px;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      background: linear-gradient(180deg, rgba(0, 230, 210, 0.05), rgba(0, 0, 0, 0));
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    #mobile-quick-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mobile-quick-btn {
+      flex: 0 0 auto;
+      border: 1px solid var(--border-light);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-main);
+      font-size: 0.7rem;
+      padding: 6px 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .mobile-quick-btn:hover,
+    .mobile-quick-btn:focus {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+      box-shadow: none;
+    }
+
     #status-bar {
       height: 36px; border-top: 1px solid var(--border-color);
       display: flex; justify-content: center;
@@ -766,10 +805,15 @@
         display: flex;
       }
 
+      #mobile-quick-nav {
+        display: flex;
+      }
+
       body.mobile-canvas-focus #left-panel,
       body.mobile-canvas-focus #right-panel,
       body.mobile-canvas-focus #status-bar,
-      body.mobile-canvas-focus #undo-redo-bar {
+      body.mobile-canvas-focus #undo-redo-bar,
+      body.mobile-canvas-focus #mobile-quick-nav {
         display: none;
       }
 
@@ -830,7 +874,7 @@
   </div>
 
   <div id="top-nav">
-    <button class="nav-btn" id="btn-mobile-menu" aria-label="Toggle mobile menu" title="Toggle full canvas view"><i class="ph ph-list"></i></button>
+    <button class="nav-btn" id="btn-mobile-menu" aria-label="Enter full canvas view" title="Enter full canvas view"><i class="ph ph-list"></i></button>
     <div class="nav-left">
       <div class="brand">
         <span class="brand-name">LOGOS</span>
@@ -912,6 +956,14 @@
           <button type="button" class="btn btn-sm btn-outline-light" id="btn-zoom-reset" aria-label="Reset zoom">100%</button>
         </div>
       </div>
+      <div id="mobile-quick-nav" aria-label="Mobile quick actions">
+        <button type="button" class="mobile-quick-btn" data-mobile-action="components"><i class="ph ph-circuitry"></i> Components</button>
+        <button type="button" class="mobile-quick-btn" data-mobile-action="workspace"><i class="ph ph-arrows-out"></i> Canvas</button>
+        <button type="button" class="mobile-quick-btn" data-mobile-action="examples"><i class="ph ph-stack"></i> Examples</button>
+        <button type="button" class="mobile-quick-btn" data-mobile-action="challenges"><i class="ph ph-puzzle-piece"></i> Challenges</button>
+        <button type="button" class="mobile-quick-btn" data-mobile-action="props"><i class="ph ph-gear"></i> Properties</button>
+        <button type="button" class="mobile-quick-btn" data-mobile-action="tt"><i class="ph ph-table"></i> Truth Table</button>
+      </div>
       <div id="undo-redo-bar">
         <div id="undo-redo-controls">
           <button class="ur-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)"><i class="ph ph-arrow-counter-clockwise"></i> </button>
@@ -956,6 +1008,7 @@ const welcomeStart = document.getElementById('welcome-start');
 const btnZoomIn = document.getElementById('btn-zoom-in');
 const btnZoomOut = document.getElementById('btn-zoom-out');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
+const mobileQuickButtons = document.querySelectorAll('[data-mobile-action]');
 
 let components = []; let wires = [];
 let selectedComp = null; let draggedComp = null; let connectingFrom = null;
@@ -1057,7 +1110,7 @@ function usesTapToAdd() {
 function updateInteractionHint() {
   if (!statusHint) return;
   statusHint.textContent = usesTapToAdd()
-    ? 'Tap a component to add it • Tap the 3-bars button for full canvas • Tap output then input to wire • Use +/- to zoom'
+    ? 'Use quick actions below canvas • Tap Components then tap gate to add • Tap 3-bars for full-canvas mode'
     : 'Drag to add • Hold left-click on empty background to pan • Scroll to zoom';
 }
 
@@ -1070,9 +1123,38 @@ function syncMobileMenuButton() {
 }
 
 function setMobileCanvasFocus(enabled) {
+  if (!isMobileLayout()) return;
   document.body.classList.toggle('mobile-canvas-focus', !!enabled);
   syncMobileMenuButton();
   setTimeout(resize, 80);
+}
+
+function scrollToPanel(panel) {
+  if (!panel) return;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function handleMobileQuickAction(action) {
+  const leftPanel = document.getElementById('left-panel');
+  const rightPanel = document.getElementById('right-panel');
+  const centerPanel = document.getElementById('center-panel');
+
+  if (action === 'workspace') {
+    setMobileCanvasFocus(true);
+    scrollToPanel(centerPanel);
+    return;
+  }
+
+  setMobileCanvasFocus(false);
+  if (action === 'components') {
+    scrollToPanel(leftPanel);
+    return;
+  }
+
+  if (action === 'examples' || action === 'challenges' || action === 'props' || action === 'tt') {
+    setMode(action);
+    scrollToPanel(rightPanel);
+  }
 }
 
 function showWelcomeModal() {
@@ -1113,8 +1195,9 @@ window.addEventListener('resize', resize);
 if (mobileLayoutQuery.addEventListener) {
   mobileLayoutQuery.addEventListener('change', () => {
     if (!mobileLayoutQuery.matches) {
-      setMobileCanvasFocus(false);
+      document.body.classList.remove('mobile-canvas-focus');
     }
+    syncMobileMenuButton();
     updateInteractionHint();
   });
 }
@@ -2576,10 +2659,15 @@ if (btnZoomReset) {
 if (btnMobileMenu) {
   btnMobileMenu.addEventListener('click', () => {
     if (!isMobileLayout()) return;
-    const next = !document.body.classList.contains('mobile-canvas-focus');
-    setMobileCanvasFocus(next);
+    setMobileCanvasFocus(!document.body.classList.contains('mobile-canvas-focus'));
   });
 }
+
+mobileQuickButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    handleMobileQuickAction(button.dataset.mobileAction);
+  });
+});
 
 // ────────────────────────────────────────────────
 // UI Updates
