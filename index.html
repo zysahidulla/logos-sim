@@ -1408,7 +1408,12 @@ window.addEventListener('keydown', e => {
 });
 
 function resize() {
-  canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = container.clientWidth * dpr;
+  canvas.height = container.clientHeight * dpr;
+  canvas.style.width = container.clientWidth + 'px';
+  canvas.style.height = container.clientHeight + 'px';
+  ctx.scale(dpr, dpr);
   updateInteractionHint();
   render();
 }
