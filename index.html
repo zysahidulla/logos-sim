@@ -323,7 +323,7 @@
       box-shadow: none;
     }
 
-    #mobile-quick-nav {
+    #mobile-section-nav {
       display: none;
       gap: 8px;
       padding: 8px 12px;
@@ -337,7 +337,7 @@
       z-index: 5;
     }
 
-    #mobile-quick-nav::-webkit-scrollbar {
+    #mobile-section-nav::-webkit-scrollbar {
       display: none;
     }
 
@@ -862,47 +862,8 @@
         display: flex;
       }
 
-      #mobile-quick-nav {
+      #mobile-section-nav {
         display: flex;
-      }
-
-      body.mobile-canvas-fullscreen {
-        overflow: hidden;
-      }
-
-      body.mobile-canvas-fullscreen #top-nav,
-      body.mobile-canvas-fullscreen #left-panel,
-      body.mobile-canvas-fullscreen #right-panel,
-      body.mobile-canvas-fullscreen #undo-redo-bar,
-      body.mobile-canvas-fullscreen #status-bar {
-        display: none;
-      }
-
-      body.mobile-canvas-fullscreen #workspace {
-        height: 100dvh;
-      }
-
-      body.mobile-canvas-fullscreen #center-panel {
-        min-height: 100dvh;
-      }
-
-      body.mobile-canvas-fullscreen #canvas-container {
-        flex: none;
-        height: calc(100dvh - 58px);
-      }
-
-      body.mobile-canvas-fullscreen #mobile-quick-nav {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        border-bottom: none;
-        background: rgba(13, 13, 13, 0.94);
-        backdrop-filter: blur(10px);
-      }
-
-      body.mobile-canvas-fullscreen #mobile-canvas-controls {
-        bottom: 70px;
       }
 
       .welcome-card {
@@ -966,6 +927,13 @@
   </div>
 
   <div id="workspace">
+    <div id="mobile-section-nav" aria-label="Mobile section navigation">
+      <button type="button" class="mobile-quick-btn" data-mobile-section="components"><i class="ph ph-circuitry"></i> Components</button>
+      <button type="button" class="mobile-quick-btn" data-mobile-section="examples"><i class="ph ph-stack"></i> Examples</button>
+      <button type="button" class="mobile-quick-btn" data-mobile-section="challenges"><i class="ph ph-puzzle-piece"></i> Challenges</button>
+      <button type="button" class="mobile-quick-btn" data-mobile-section="props"><i class="ph ph-gear"></i> Properties</button>
+      <button type="button" class="mobile-quick-btn" data-mobile-section="tt"><i class="ph ph-table"></i> Truth Table</button>
+    </div>
     
     <div id="left-panel">
       <div class="panel-header"><i class="ph ph-circuitry"></i> COMPONENTS <button type="button" id="btn-components-toggle" aria-label="Hide components" aria-expanded="true" title="Hide components"><i class="ph ph-caret-up"></i></button></div>
@@ -1025,14 +993,6 @@
           <button type="button" class="btn btn-sm btn-outline-light" id="btn-zoom-reset" aria-label="Reset zoom">100%</button>
         </div>
       </div>
-      <div id="mobile-quick-nav" aria-label="Mobile quick actions">
-        <button type="button" class="mobile-quick-btn" data-mobile-action="components"><i class="ph ph-circuitry"></i> Components</button>
-        <button type="button" class="mobile-quick-btn" data-mobile-action="workspace"><i class="ph ph-arrows-out"></i> Canvas</button>
-        <button type="button" class="mobile-quick-btn" data-mobile-action="examples"><i class="ph ph-stack"></i> Examples</button>
-        <button type="button" class="mobile-quick-btn" data-mobile-action="challenges"><i class="ph ph-puzzle-piece"></i> Challenges</button>
-        <button type="button" class="mobile-quick-btn" data-mobile-action="props"><i class="ph ph-gear"></i> Properties</button>
-        <button type="button" class="mobile-quick-btn" data-mobile-action="tt"><i class="ph ph-table"></i> Truth Table</button>
-      </div>
       <div id="undo-redo-bar">
         <div id="undo-redo-controls">
           <button class="ur-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)"><i class="ph ph-arrow-counter-clockwise"></i> </button>
@@ -1076,8 +1036,7 @@ const welcomeStart = document.getElementById('welcome-start');
 const btnZoomIn = document.getElementById('btn-zoom-in');
 const btnZoomOut = document.getElementById('btn-zoom-out');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
-const mobileQuickButtons = document.querySelectorAll('[data-mobile-action]');
-const workspaceQuickButton = document.querySelector('[data-mobile-action="workspace"]');
+const mobileSectionButtons = document.querySelectorAll('[data-mobile-section]');
 const leftPanel = document.getElementById('left-panel');
 const btnComponentsToggle = document.getElementById('btn-components-toggle');
 
@@ -1181,16 +1140,8 @@ function usesTapToAdd() {
 function updateInteractionHint() {
   if (!statusHint) return;
   statusHint.textContent = usesTapToAdd()
-    ? 'Use quick actions below canvas • Tap Canvas for fullscreen • Tap Components then tap a gate to add'
+    ? 'Use section tabs above Components • Tap Components then tap a gate to add • Use +/- to zoom'
     : 'Drag to add • Hold left-click on empty background to pan • Scroll to zoom';
-}
-
-function syncMobileWorkspaceButton() {
-  if (!workspaceQuickButton) return;
-  const fullscreen = document.body.classList.contains('mobile-canvas-fullscreen');
-  workspaceQuickButton.innerHTML = fullscreen
-    ? '<i class="ph ph-arrows-in"></i> Exit Canvas'
-    : '<i class="ph ph-arrows-out"></i> Canvas';
 }
 
 function setComponentsCollapsed(collapsed) {
@@ -1209,25 +1160,9 @@ function scrollToPanel(panel) {
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function handleMobileQuickAction(action) {
+function handleMobileSectionAction(action) {
   const leftPanel = document.getElementById('left-panel');
   const rightPanel = document.getElementById('right-panel');
-  const centerPanel = document.getElementById('center-panel');
-
-  if (action === 'workspace') {
-    if (isMobileLayout()) {
-      document.body.classList.toggle('mobile-canvas-fullscreen');
-      syncMobileWorkspaceButton();
-      setTimeout(resize, 80);
-    }
-    scrollToPanel(centerPanel);
-    return;
-  }
-
-  if (document.body.classList.contains('mobile-canvas-fullscreen')) {
-    document.body.classList.remove('mobile-canvas-fullscreen');
-    syncMobileWorkspaceButton();
-  }
 
   if (action === 'components') {
     setComponentsCollapsed(false);
@@ -1278,10 +1213,6 @@ function resize() {
 window.addEventListener('resize', resize);
 if (mobileLayoutQuery.addEventListener) {
   mobileLayoutQuery.addEventListener('change', () => {
-    if (!mobileLayoutQuery.matches && document.body.classList.contains('mobile-canvas-fullscreen')) {
-      document.body.classList.remove('mobile-canvas-fullscreen');
-    }
-    syncMobileWorkspaceButton();
     setComponentsCollapsed(false);
     updateInteractionHint();
   });
@@ -2741,9 +2672,9 @@ if (btnZoomReset) {
   });
 }
 
-mobileQuickButtons.forEach(button => {
+mobileSectionButtons.forEach(button => {
   button.addEventListener('click', () => {
-    handleMobileQuickAction(button.dataset.mobileAction);
+    handleMobileSectionAction(button.dataset.mobileSection);
   });
 });
 
@@ -2863,7 +2794,6 @@ window.addEventListener('keydown', e => {
 setTimeout(resize, 100);
 setTimeout(() => {
   initTheme();
-  syncMobileWorkspaceButton();
   setComponentsCollapsed(false);
   updateInteractionHint();
   loadFromURL();
